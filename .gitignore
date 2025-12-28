@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Virtual environments
+backend/venv/
+desktop-app/venv/
+
+# API Keys and secrets
+.api_key
+*.key
+secrets/
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Audio files (examples)
+*.wav
+*.mp3
+*.flac
+response.wav
+
+# Model caches
+.cache/
+models/
+
+# PyQt
+*.qmlc
+
+# Temporary files
+tmp/
+temp/
+*.tmp

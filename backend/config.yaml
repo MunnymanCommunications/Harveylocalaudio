@@ -1,0 +1,46 @@
+server:
+  host: "0.0.0.0"
+  port: 8765
+  api_key: ""  # Auto-generated on first run if empty
+  cors_origins:
+    - "*"
+
+llm:
+  provider: "ollama"
+  model: "gemma3:14b"
+  base_url: "http://localhost:11434"
+  temperature: 0.7
+  max_tokens: 2048
+  top_p: 0.9
+  stream: true
+
+stt:
+  engine: "whisper"
+  model: "large-v3"  # Options: tiny, base, small, medium, large, large-v2, large-v3
+  language: "en"
+  device: "cuda"  # Options: cuda, cpu
+  compute_type: "float16"  # Options: float16, float32, int8
+
+tts:
+  engine: "piper"
+  voice: "en_US-lessac-medium"  # Default voice
+  speed: 1.0
+  device: "cpu"
+  quality: "high"
+
+audio:
+  sample_rate: 16000
+  channels: 1
+  chunk_size: 1024
+  format: "wav"
+
+conversation:
+  max_history: 10
+  context_window: 4096
+  system_prompt: "You are Harvey, a helpful AI voice assistant. Provide clear, concise, and natural conversational responses."
+
+logging:
+  level: "INFO"
+  file: "logs/server.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
