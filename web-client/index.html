@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harvey Voice AI - Low Latency Conversation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .connection-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .connection-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-text {
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .voice-control {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .record-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .record-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .record-btn.recording {
+            background: #dc3545;
+            animation: recordPulse 1s infinite;
+        }
+
+        @keyframes recordPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .record-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .conversation-log {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 30px;
+        }
+
+        .conversation-log h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .message.user {
+            background: #e3f2fd;
+            margin-left: 20px;
+        }
+
+        .message.assistant {
+            background: #f3e5f5;
+            margin-right: 20px;
+        }
+
+        .message-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+
+        .message-content {
+            color: #555;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .latency {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .latency.fast {
+            color: #28a745;
+        }
+
+        .latency.medium {
+            color: #ffc107;
+        }
+
+        .latency.slow {
+            color: #dc3545;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .audio-visualizer {
+            height: 60px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 10px;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: #667eea;
+            border-radius: 2px;
+            transition: height 0.1s;
+        }
+
+        .test-mode {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .test-mode-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ Harvey Voice AI</h1>
+        <p class="subtitle">Low Latency Conversational AI with Voice Cloning</p>
+
+        <!-- Connection Section -->
+        <div class="connection-section">
+            <h3>🔌 WebSocket Connection</h3>
+
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <div class="status-text" id="statusText">Disconnected</div>
+            </div>
+
+            <div class="input-group">
+                <label for="wsUrl">WebSocket URL</label>
+                <input type="text" id="wsUrl" value="ws://localhost:8765/ws/audio" placeholder="ws://localhost:8765/ws/audio">
+            </div>
+
+            <div class="input-group">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="Enter your API key">
+            </div>
+
+            <button class="btn btn-primary" id="connectBtn" onclick="toggleConnection()">
+                <span id="connectBtnText">Connect</span>
+            </button>
+        </div>
+
+        <!-- Voice Control -->
+        <div class="voice-control">
+            <button class="record-btn" id="recordBtn" onclick="toggleRecording()" disabled>
+                <span id="recordIcon">🎤</span>
+            </button>
+            <p style="margin-top: 15px; color: #666; font-size: 14px;" id="recordStatus">
+                Connect to server to start
+            </p>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="audio-visualizer" id="visualizer">
+            <!-- Bars added dynamically -->
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="avgLatency">--</div>
+                <div class="stat-label">Avg Latency (ms)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastLatency">--</div>
+                <div class="stat-label">Last Response (ms)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="messageCount">0</div>
+                <div class="stat-label">Messages</div>
+            </div>
+        </div>
+
+        <!-- Test Mode -->
+        <div class="test-mode">
+            <div class="test-mode-title">🧪 Test Mode (Text Input)</div>
+            <div class="input-group" style="margin-bottom: 10px;">
+                <input type="text" id="testInput" placeholder="Type a message to test (no audio)"
+                       onkeypress="if(event.key==='Enter') sendTestMessage()">
+            </div>
+            <button class="btn btn-primary" onclick="sendTestMessage()" id="testBtn" disabled>
+                Send Test Message
+            </button>
+        </div>
+
+        <!-- Conversation Log -->
+        <div class="conversation-log">
+            <h3>💬 Conversation History</h3>
+            <div id="conversationLog">
+                <p style="text-align: center; color: #888; font-size: 14px;">
+                    No messages yet. Connect and start talking!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

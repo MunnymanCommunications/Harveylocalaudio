@@ -89,6 +89,31 @@ const ws = new WebSocket('ws://localhost:8765/ws/audio', {
 - **Server Status**: Real-time monitoring
 - **Logs Viewer**: See server activity
 
+## Web Client Interface
+
+Beautiful web interface for testing low-latency voice conversations!
+
+**Features:**
+- 🎙️ Voice recording with push-to-talk
+- 🔊 Real-time audio playback
+- 📊 Live latency statistics
+- 💬 Conversation history
+- 🧪 Text mode for testing
+- 📈 Audio visualizer
+
+**Quick Start:**
+```bash
+# Start the backend server first
+./run-server.sh
+
+# Then launch the web client
+./run-web-client.sh
+```
+
+Opens at `http://localhost:8080` - just enter your API key and start talking!
+
+See `web-client/README.md` for full documentation.
+
 ## Configuration
 
 Edit `backend/config.yaml`:
