@@ -25,7 +25,7 @@ The installation script will:
 - Check Python version
 - Install Ollama (if not present)
 - Download Gemma 3 14B model
-- Install Piper TTS
+- Install Coqui XTTS v2 (via requirements.txt)
 - Set up Python virtual environments
 - Create launcher scripts
 
@@ -154,14 +154,21 @@ await ws.send(json.dumps({
 Edit `backend/config.yaml` to customize:
 
 - **LLM Model**: Change `llm.model` to use different models
-- **Voice**: Change `tts.voice` for different voices
-- **Language**: Change `stt.language` for non-English
+- **Voice**: Change `tts.voice` for different voices (default, male, female, custom)
+- **TTS Language**: Change `tts.language` for different output languages
+- **STT Language**: Change `stt.language` for non-English input
 - **Performance**: Adjust `stt.model` size (tiny/small/medium/large)
 
-Example voices:
-- `en_US-lessac-medium` (default, clear male voice)
-- `en_US-amy-medium` (female voice)
-- `en_US-danny-low` (lower male voice)
+Example TTS voices:
+- `default` (Natural XTTS voice)
+- `male` (Add custom male voice sample)
+- `female` (Add custom female voice sample)
+- `custom` (Use your own voice cloning sample)
+
+Supported TTS Languages:
+- English (en), Spanish (es), French (fr), German (de), Italian (it), Portuguese (pt)
+- Polish (pl), Turkish (tr), Russian (ru), Dutch (nl), Czech (cs), Arabic (ar)
+- Chinese (zh-cn), Japanese (ja)
 
 ## Troubleshooting
 

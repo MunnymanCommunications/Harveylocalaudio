@@ -9,12 +9,14 @@ Complete audio-to-audio pipeline with WebSocket support for low-latency voice co
 - **Self-Hosted**: Complete privacy and control
 - **Desktop Management App**: Easy server control and configuration
 - **Gemma 3 14B**: Powerful local LLM for natural conversations
-- **High-Quality Audio**: Whisper Large-v3 STT + Piper TTS
+- **High-Quality Audio**: Whisper Large-v3 STT + Coqui XTTS v2
+- **Voice Cloning**: Support for custom voice samples
+- **Multilingual**: Supports 14+ languages
 
 ## Architecture
 
 ```
-Audio Input → Whisper (STT) → Gemma 3 14B (LLM) → Piper (TTS) → Audio Output
+Audio Input → Whisper (STT) → Gemma 3 14B (LLM) → Coqui XTTS (TTS) → Audio Output
                                     ↓
                             WebSocket Connection
 ```
@@ -108,9 +110,23 @@ stt:
   device: "cuda"
 
 tts:
-  engine: "piper"
-  voice: "en_US-lessac-medium"
+  engine: "coqui"
+  voice: "default"  # Options: default, male, female, custom
+  language: "en"    # Supports 14+ languages
   speed: 1.0
+```
+
+### Voice Cloning
+
+Add custom voice samples for voice cloning:
+
+1. Record 3-10 seconds of clear speech
+2. Save as WAV file
+3. Add to config or via API
+
+```python
+# Via API after server startup
+audio_pipeline.tts.add_voice_sample('my_voice', 'path/to/voice_sample.wav')
 ```
 
 ## API Documentation

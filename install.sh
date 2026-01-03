@@ -38,12 +38,6 @@ ollama pull gemma3:14b
 echo "Gemma 3 14B model ready ✓"
 echo ""
 
-# Install Piper TTS
-echo "Installing Piper TTS..."
-pip install piper-tts
-echo "Piper TTS installed ✓"
-echo ""
-
 # Create virtual environment for backend
 echo "Setting up backend environment..."
 cd backend

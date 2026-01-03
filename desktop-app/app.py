@@ -322,14 +322,35 @@ class MainWindow(QMainWindow):
         voice_layout.addWidget(QLabel("Voice:"))
         self.voice_combo = QComboBox()
         self.voice_combo.addItems([
-            "en_US-lessac-medium",
-            "en_US-amy-medium",
-            "en_US-danny-low",
-            "en_US-kathleen-low",
-            "en_US-ljspeech-medium"
+            "default",
+            "male",
+            "female",
+            "custom"
         ])
         self.voice_combo.setCurrentText(self.config['tts']['voice'])
         voice_layout.addWidget(self.voice_combo)
+
+        voice_layout.addWidget(QLabel("Language:"))
+        self.language_combo = QComboBox()
+        self.language_combo.addItems([
+            "en - English",
+            "es - Spanish",
+            "fr - French",
+            "de - German",
+            "it - Italian",
+            "pt - Portuguese",
+            "pl - Polish",
+            "tr - Turkish",
+            "ru - Russian",
+            "nl - Dutch",
+            "cs - Czech",
+            "ar - Arabic",
+            "zh-cn - Chinese",
+            "ja - Japanese"
+        ])
+        current_lang = self.config['tts'].get('language', 'en')
+        self.language_combo.setCurrentText(f"{current_lang} - {self._get_language_name(current_lang)}")
+        voice_layout.addWidget(self.language_combo)
 
         voice_layout.addWidget(QLabel("Speed:"))
         self.speed_slider = QSlider(Qt.Orientation.Horizontal)
@@ -613,8 +634,24 @@ asyncio.run(connect())
         self.config['tts']['voice'] = self.voice_combo.currentText()
         self.config['tts']['speed'] = self.speed_slider.value() / 100
 
+        # Extract language code from combo box text (e.g., "en - English" -> "en")
+        lang_text = self.language_combo.currentText()
+        lang_code = lang_text.split(' - ')[0]
+        self.config['tts']['language'] = lang_code
+
         self.save_config()
         QMessageBox.information(self, "Success", "Voice configuration saved!")
+
+    def _get_language_name(self, lang_code: str) -> str:
+        """Get language name from code"""
+        lang_map = {
+            'en': 'English', 'es': 'Spanish', 'fr': 'French',
+            'de': 'German', 'it': 'Italian', 'pt': 'Portuguese',
+            'pl': 'Polish', 'tr': 'Turkish', 'ru': 'Russian',
+            'nl': 'Dutch', 'cs': 'Czech', 'ar': 'Arabic',
+            'zh-cn': 'Chinese', 'ja': 'Japanese'
+        }
+        return lang_map.get(lang_code, 'English')
 
     def save_llm_config(self):
         """Save LLM configuration"""

@@ -19,8 +19,9 @@ openai-whisper==20231117
 torch==2.1.2
 torchaudio==2.1.2
 
-# TTS (Piper)
-piper-tts==1.2.0
+# TTS (Coqui XTTS)
+TTS==0.22.0
+pydub==0.25.1
 
 # LLM Integration (Ollama)
 ollama==0.1.6

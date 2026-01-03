@@ -1,59 +1,81 @@
 """
 Text-to-Speech Engine
-Uses Piper TTS for high-quality voice synthesis
+Uses Coqui XTTS for high-quality voice synthesis with voice cloning
 """
 
 import asyncio
 import io
 import logging
-import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 import numpy as np
 import soundfile as sf
+import torch
 
 logger = logging.getLogger(__name__)
 
 
-class PiperTTS:
-    """Piper Text-to-Speech Engine"""
+class CoquiTTS:
+    """Coqui XTTS Text-to-Speech Engine"""
 
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.voice = config.get('voice', 'en_US-lessac-medium')
+        self.voice = config.get('voice', 'default')
         self.speed = config.get('speed', 1.0)
-        self.quality = config.get('quality', 'high')
+        self.language = config.get('language', 'en')
+        self.device = config.get('device', 'cuda' if torch.cuda.is_available() else 'cpu')
 
-        self.piper_path = 'piper'  # Assume piper is in PATH
-        self.model_path: Optional[Path] = None
+        self.tts = None
+        self.model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
+
+        # Voice sample paths for cloning
+        self.voice_samples = {
+            'default': None,  # Uses default XTTS voice
+            'male': None,
+            'female': None,
+            'custom': None
+        }
 
     async def initialize(self):
         """Initialize TTS engine"""
-        logger.info(f"Initializing Piper TTS with voice: {self.voice}")
+        logger.info(f"Initializing Coqui XTTS with voice: {self.voice}")
 
         try:
-            # Check if piper is available
-            result = subprocess.run(
-                ['which', 'piper'],
-                capture_output=True,
-                text=True
+            # Import TTS here to avoid loading if not needed
+            from TTS.api import TTS
+
+            # Run model loading in thread pool (blocking operation)
+            loop = asyncio.get_event_loop()
+            self.tts = await loop.run_in_executor(
+                None,
+                self._load_model,
+                TTS
             )
 
-            if result.returncode != 0:
-                raise RuntimeError(
-                    "Piper not found. Install with: pip install piper-tts"
-                )
-
-            logger.info("Piper TTS initialized successfully")
+            logger.info(f"Coqui XTTS initialized successfully on {self.device}")
 
         except Exception as e:
-            logger.error(f"Failed to initialize Piper TTS: {e}")
+            logger.error(f"Failed to initialize Coqui TTS: {e}")
             raise
+
+    def _load_model(self, TTS):
+        """Load TTS model (runs in thread pool)"""
+        tts = TTS(
+            model_name=self.model_name,
+            progress_bar=False,
+            gpu=(self.device == 'cuda')
+        )
+        return tts
 
     async def cleanup(self):
         """Cleanup resources"""
-        pass
+        if self.tts is not None:
+            del self.tts
+            self.tts = None
+
+            if self.device == 'cuda':
+                torch.cuda.empty_cache()
 
     async def synthesize(self, text: str) -> bytes:
         """
@@ -65,6 +87,9 @@ class PiperTTS:
         Returns:
             Audio data as WAV bytes
         """
+        if self.tts is None:
+            raise RuntimeError("Coqui TTS not initialized")
+
         try:
             logger.debug(f"Synthesizing: {text[:100]}...")
 
@@ -80,52 +105,50 @@ class PiperTTS:
 
         except Exception as e:
             logger.error(f"TTS synthesis failed: {e}")
-            raise
+            # Return silence as fallback
+            return self._generate_silence(1.0)
 
     def _synthesize_sync(self, text: str) -> bytes:
         """Synchronous TTS synthesis"""
         try:
-            # Run piper command
-            cmd = [
-                'piper',
-                '--model', self.voice,
-                '--output-raw'
-            ]
+            # Get voice sample if using voice cloning
+            speaker_wav = self.voice_samples.get(self.voice)
 
-            if self.speed != 1.0:
-                cmd.extend(['--length-scale', str(1.0 / self.speed)])
+            if speaker_wav and Path(speaker_wav).exists():
+                # Use voice cloning with reference audio
+                wav = self.tts.tts(
+                    text=text,
+                    speaker_wav=speaker_wav,
+                    language=self.language,
+                    speed=self.speed
+                )
+            else:
+                # Use default XTTS voice
+                wav = self.tts.tts(
+                    text=text,
+                    language=self.language,
+                    speed=self.speed
+                )
 
-            # Run piper process
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+            # Convert to numpy array if needed
+            if isinstance(wav, list):
+                wav = np.array(wav, dtype=np.float32)
 
-            # Send text and get audio
-            stdout, stderr = process.communicate(input=text.encode('utf-8'))
+            # Normalize audio
+            wav = wav / np.max(np.abs(wav))
 
-            if process.returncode != 0:
-                raise RuntimeError(f"Piper failed: {stderr.decode()}")
-
-            # Convert raw audio to WAV format
-            audio_array = np.frombuffer(stdout, dtype=np.int16)
-            audio_float = audio_array.astype(np.float32) / 32768.0
-
-            # Write to WAV bytes
+            # Convert to WAV bytes
             wav_io = io.BytesIO()
-            sf.write(wav_io, audio_float, 22050, format='WAV')
+            sf.write(wav_io, wav, self.tts.synthesizer.output_sample_rate, format='WAV')
             wav_io.seek(0)
 
             return wav_io.read()
 
         except Exception as e:
-            logger.error(f"Piper synthesis error: {e}")
-            # Fallback: return silent audio
+            logger.error(f"Coqui synthesis error: {e}")
             return self._generate_silence(1.0)
 
-    def _generate_silence(self, duration: float = 1.0, sample_rate: int = 22050) -> bytes:
+    def _generate_silence(self, duration: float = 1.0, sample_rate: int = 24000) -> bytes:
         """Generate silence as fallback"""
         samples = int(duration * sample_rate)
         silence = np.zeros(samples, dtype=np.float32)
@@ -146,5 +169,24 @@ class PiperTTS:
             self.speed = config['speed']
             logger.info(f"Speed changed to: {self.speed}")
 
-        if 'quality' in config:
-            self.quality = config['quality']
+        if 'language' in config:
+            self.language = config['language']
+            logger.info(f"Language changed to: {self.language}")
+
+    def add_voice_sample(self, voice_name: str, sample_path: str):
+        """
+        Add a voice sample for cloning
+
+        Args:
+            voice_name: Name for this voice
+            sample_path: Path to audio file (3-10 seconds of clear speech)
+        """
+        if Path(sample_path).exists():
+            self.voice_samples[voice_name] = sample_path
+            logger.info(f"Voice sample '{voice_name}' added: {sample_path}")
+        else:
+            logger.error(f"Voice sample not found: {sample_path}")
+
+    def list_voices(self) -> list:
+        """List available voices"""
+        return list(self.voice_samples.keys())

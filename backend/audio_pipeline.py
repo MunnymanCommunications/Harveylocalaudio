@@ -14,7 +14,7 @@ import soundfile as sf
 
 from stt_engine import WhisperSTT
 from llm_client import OllamaClient
-from tts_engine import PiperTTS
+from tts_engine import CoquiTTS
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class AudioPipeline:
         # Components
         self.stt: Optional[WhisperSTT] = None
         self.llm: Optional[OllamaClient] = None
-        self.tts: Optional[PiperTTS] = None
+        self.tts: Optional[CoquiTTS] = None
 
         # Conversation history
         self.conversation_history = []
@@ -59,7 +59,7 @@ class AudioPipeline:
 
         # Initialize TTS
         try:
-            self.tts = PiperTTS(self.config['tts'])
+            self.tts = CoquiTTS(self.config['tts'])
             await self.tts.initialize()
             logger.info("TTS engine initialized")
         except Exception as e:

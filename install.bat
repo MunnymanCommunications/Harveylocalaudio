@@ -36,12 +36,6 @@ ollama pull gemma3:14b
 echo Gemma 3 14B ready
 echo.
 
-REM Install Piper TTS
-echo Installing Piper TTS...
-pip install piper-tts
-echo Piper TTS installed
-echo.
-
 REM Setup backend
 echo Setting up backend environment...
 cd backend

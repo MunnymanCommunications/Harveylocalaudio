@@ -22,11 +22,11 @@ stt:
   compute_type: "float16"  # Options: float16, float32, int8
 
 tts:
-  engine: "piper"
-  voice: "en_US-lessac-medium"  # Default voice
+  engine: "coqui"  # Coqui XTTS v2
+  voice: "default"  # Options: default, male, female, custom (or path to voice sample)
   speed: 1.0
-  device: "cpu"
-  quality: "high"
+  language: "en"  # Options: en, es, fr, de, it, pt, pl, tr, ru, nl, cs, ar, zh-cn, ja
+  device: "cuda"  # Options: cuda, cpu (CUDA recommended for low latency)
 
 audio:
   sample_rate: 16000
