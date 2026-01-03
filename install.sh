@@ -32,10 +32,11 @@ else
 fi
 echo ""
 
-# Pull Gemma 3 14B model
-echo "Pulling Gemma 3 14B model (this may take a while)..."
-ollama pull gemma3:14b
-echo "Gemma 3 14B model ready ✓"
+# Pull Gemma 2 9B model (or your preferred model)
+echo "Pulling Gemma 2 9B model (this may take a while)..."
+echo "Note: You can change the model in backend/config.yaml"
+ollama pull gemma2:9b
+echo "Gemma 2 9B model ready ✓"
 echo ""
 
 # Create virtual environment for backend

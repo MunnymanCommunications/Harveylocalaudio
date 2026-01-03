@@ -7,7 +7,7 @@ server:
 
 llm:
   provider: "ollama"
-  model: "gemma3:14b"
+  model: "gemma2:9b"  # Options: gemma2:9b, gemma2:27b, llama3.1:8b, qwen2.5:14b
   base_url: "http://localhost:11434"
   temperature: 0.7
   max_tokens: 2048
