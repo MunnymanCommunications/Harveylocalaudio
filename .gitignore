@@ -51,3 +51,5 @@ models/
 tmp/
 temp/
 *.tmp
+*.onnx
+*.onnx.json

@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>HARVEY IO v2.0</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <!-- Pako compression library for audio decompression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000000;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background grid */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 0, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Red glow effect */
+        .red-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 0, 0, 0.3) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 2;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Main mode - Voice activation */
+        .voice-mode {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s ease;
+        }
+
+        .voice-mode.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* Harvey IO Circle */
+        .harvey-circle {
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+            border: 4px solid #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow:
+                0 0 30px rgba(255, 0, 0, 0.5),
+                inset 0 0 30px rgba(255, 0, 0, 0.2);
+        }
+
+        .harvey-circle:hover {
+            transform: scale(1.05);
+            box-shadow:
+                0 0 50px rgba(255, 0, 0, 0.8),
+                inset 0 0 40px rgba(255, 0, 0, 0.3);
+        }
+
+        .harvey-circle.active {
+            background: linear-gradient(135deg, #330000 0%, #1a0000 100%);
+            border-color: #ff3333;
+            animation: activeCircle 1s ease-in-out infinite;
+        }
+
+        @keyframes activeCircle {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.8), inset 0 0 30px rgba(255, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 60px rgba(255, 0, 0, 1), inset 0 0 50px rgba(255, 0, 0, 0.6); }
+        }
+
+        .harvey-circle::before {
+            content: '';
+            position: absolute;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 0, 0, 0.3);
+            animation: ripple 2s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+
+        .harvey-text {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            letter-spacing: 8px;
+        }
+
+        /* Status text */
+        .status-text {
+            margin-top: 40px;
+            font-size: 18px;
+            color: #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        .status-text.listening {
+            animation: blink 0.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Connection indicator */
+        .connection-status {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff0000;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff0000;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #666;
+            box-shadow: none;
+            animation: none;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Chat mode button */
+        .chat-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff0000 0%, #990000 100%);
+            border: 2px solid #ff0000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+            z-index: 10;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.9);
+        }
+
+        .chat-icon {
+            font-size: 32px;
+            color: white;
+        }
+
+        /* Chat mode */
+        .chat-mode {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            z-index: 999;
+            display: none;
+            flex-direction: column;
+        }
+
+        .chat-mode.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+            border-bottom: 2px solid #ff0000;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-size: 24px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        .close-chat {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ff0000;
+            background: transparent;
+            color: #ff0000;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 5px;
+        }
+
+        .close-chat:hover {
+            background: #ff0000;
+            color: #000;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background-image:
+                linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #ffffff;
+            border: 1px solid #ff3333;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .message.assistant .message-bubble {
+            background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+            color: #ffffff;
+            border: 1px solid #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .message-meta {
+            font-size: 11px;
+            color: #ff0000;
+            margin-top: 5px;
+            opacity: 0.7;
+        }
+
+        .chat-input-container {
+            background: linear-gradient(135deg, #1a0000 0%, #000000 100%);
+            border-top: 2px solid #ff0000;
+            padding: 20px 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #000000;
+            border: 2px solid #ff0000;
+            border-radius: 25px;
+            padding: 15px 25px;
+            color: #ffffff;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            border-color: #ff3333;
+        }
+
+        .chat-input::placeholder {
+            color: #660000;
+        }
+
+        .send-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff0000 0%, #990000 100%);
+            border: 2px solid #ff0000;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Loading animation */
+        .loading-dots {
+            display: inline-flex;
+            gap: 5px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: loadingBounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingBounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Latency indicator */
+        .latency-display {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #ff0000;
+            border-radius: 10px;
+            padding: 15px 20px;
+            color: #ff0000;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Transcription display */
+        .transcription-display {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            padding: 15px 25px;
+            max-width: 80%;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .transcription-label {
+            color: #ff0000;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .transcription-text {
+            color: #ffffff;
+            font-size: 16px;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        /* Scrollbar styling */
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #ff0000;
+            border-radius: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background: #ff3333;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .harvey-circle {
+                width: 280px;
+                height: 280px;
+            }
+
+            .harvey-circle::before {
+                width: 300px;
+                height: 300px;
+            }
+
+            .harvey-text {
+                font-size: 32px;
+                letter-spacing: 5px;
+            }
+
+            .status-text {
+                font-size: 14px;
+                margin-top: 30px;
+            }
+
+            .connection-status {
+                top: 20px;
+                right: 20px;
+                font-size: 11px;
+            }
+
+            .chat-toggle {
+                width: 60px;
+                height: 60px;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .chat-icon {
+                font-size: 26px;
+            }
+
+            .latency-display {
+                bottom: 20px;
+                left: 20px;
+                padding: 10px 15px;
+                font-size: 10px;
+            }
+
+            .chat-header {
+                padding: 15px 20px;
+            }
+
+            .chat-title {
+                font-size: 18px;
+                letter-spacing: 2px;
+            }
+
+            .chat-container {
+                padding: 20px;
+            }
+
+            .message-bubble {
+                max-width: 85%;
+                font-size: 14px;
+            }
+
+            .chat-input-container {
+                padding: 15px 20px;
+            }
+
+            .chat-input {
+                font-size: 14px;
+                padding: 12px 20px;
+            }
+
+            .send-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+        }
+
+        /* Prevent text selection on touch devices */
+        .harvey-circle,
+        .chat-toggle,
+        .send-btn {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <div class="grid-background"></div>
+    <div class="red-glow"></div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Connection status -->
+        <div class="connection-status">
+            <div class="status-dot disconnected" id="statusDot"></div>
+            <span id="statusText">DISCONNECTED</span>
+        </div>
+
+        <!-- Voice mode -->
+        <div class="voice-mode" id="voiceMode">
+            <div class="harvey-circle" id="harveyCircle">
+                <div class="harvey-text">HARVEY IO</div>
+            </div>
+            <div class="status-text" id="statusMessage">PRESS TO ACTIVATE</div>
+        </div>
+
+        <!-- Latency display -->
+        <div class="latency-display" id="latencyDisplay" style="display: none;">
+            <div>LATENCY: <span id="latencyValue">--</span>ms</div>
+        </div>
+
+        <!-- Time to First Token display -->
+        <div class="latency-display" id="ttftDisplay" style="display: none; top: 100px;">
+            <div>TIME TO FIRST TOKEN: <span id="ttftValue">--</span>ms</div>
+        </div>
+
+        <!-- Transcription display -->
+        <div class="transcription-display" id="transcriptionDisplay" style="display: none;">
+            <div class="transcription-label">YOU SAID:</div>
+            <div class="transcription-text" id="transcriptionText">--</div>
+        </div>
+    </div>
+
+    <!-- Chat toggle button -->
+    <div class="chat-toggle" id="chatToggle">
+        <div class="chat-icon">💬</div>
+    </div>
+
+    <!-- Chat mode -->
+    <div class="chat-mode" id="chatMode">
+        <div class="chat-header">
+            <div class="chat-title">HARVEY IO // CHAT MODE</div>
+            <button class="close-chat" id="closeChat">✕</button>
+        </div>
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistant">
+                <div class="message-bubble">
+                    HARVEY IO INITIALIZED. READY FOR CONVERSATION.
+                </div>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input
+                type="text"
+                class="chat-input"
+                id="chatInput"
+                placeholder="TYPE YOUR MESSAGE..."
+                autocomplete="off"
+            />
+            <button class="send-btn" id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <!-- Audio player -->
+    <audio id="audioPlayer" style="display: none;"></audio>
+
+    <script>
+        // Configuration - Auto-detect WebSocket URL
+        const API_KEY = 'MB8w2x1hGPRBVhZdnRvqJuBxnADUQjFc7GsqXEnJJ8w';
+
+        // Auto-detect WebSocket protocol and host from page URL
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.host; // includes port if present
+        const WS_URL = `${wsProtocol}//${wsHost}/ws/audio?api_key=${API_KEY}`;
+
+        console.log('===== HARVEY DEBUG =====');
+        console.log('Page URL:', window.location.href);
+        console.log('Page protocol:', window.location.protocol);
+        console.log('WebSocket URL:', WS_URL);
+        console.log('========================');
+
+        // WebSocket connection
+        let ws = null;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let currentAudio = null;
+        let isVoiceMode = true;
+        let conversationMode = false;
+        let audioContext = null;
+        let recordingStream = null;
+        let silenceTimeout = null;
+        let isHarveySpeaking = false;
+        let audioUnlocked = false; // Track if audio playback is unlocked
+
+        // VAD (Voice Activity Detection) configuration
+        const VAD_CONFIG = {
+            energyThreshold: 0.01,      // Minimum energy to detect speech
+            silenceDuration: 1200,       // 1.2s of silence ends turn (as requested)
+            maxRecordingDuration: 15000, // 15s maximum (safety)
+            minRecordingDuration: 500    // 0.5s minimum
+        };
+
+        // VAD state
+        let vadState = {
+            isDetectingSpeech: false,
+            silenceStart: null,
+            recordingStart: null,
+            analyser: null,
+            monitoringActive: false
+        };
+
+        // DOM elements
+        const harveyCircle = document.getElementById('harveyCircle');
+        const statusMessage = document.getElementById('statusMessage');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const voiceMode = document.getElementById('voiceMode');
+        const chatMode = document.getElementById('chatMode');
+        const chatToggle = document.getElementById('chatToggle');
+        const closeChat = document.getElementById('closeChat');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const latencyDisplay = document.getElementById('latencyDisplay');
+        const latencyValue = document.getElementById('latencyValue');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const transcriptionDisplay = document.getElementById('transcriptionDisplay');
+        const transcriptionText = document.getElementById('transcriptionText');
+
+        // Connect to WebSocket
+        function connect() {
+            console.log('===== CONNECT FUNCTION CALLED =====');
+            console.log('Attempting to connect to:', WS_URL);
+            updateStatus('CONNECTING...', 'disconnected');
+
+            try {
+                console.log('Creating WebSocket object...');
+                ws = new WebSocket(WS_URL);
+                console.log('WebSocket object created, state:', ws.readyState);
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected successfully');
+                    updateStatus('CONNECTED', 'connected');
+                    statusMessage.textContent = 'PRESS TO ACTIVATE';
+                };
+
+                ws.onmessage = async (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+
+                        // Log without the large audio data
+                        if (message.type === 'audio_response') {
+                            console.log('Received audio_response:', {
+                                type: message.type,
+                                transcription: message.transcription,
+                                text: message.text,
+                                audioLength: message.audio ? message.audio.length : 'null',
+                                latency_ms: message.latency_ms
+                            });
+                        } else {
+                            console.log('Received:', message);
+                        }
+
+                        if (message.type === 'connected') {
+                            updateStatus('CONNECTED', 'connected');
+                            statusMessage.textContent = 'PRESS TO ACTIVATE';
+                        }
+                        else if (message.type === 'processing') {
+                            statusMessage.textContent = 'PROCESSING...';
+                        }
+                        else if (message.type === 'transcription') {
+                            console.log('Transcription:', message.text);
+                            statusMessage.textContent = 'GENERATING RESPONSE...';
+                        }
+                        else if (message.type === 'first_token') {
+                            handleFirstToken(message.time_ms);
+                        }
+                        else if (message.type === 'audio_chunk') {
+                            handleAudioChunk(message);
+                        }
+                        else if (message.type === 'audio_complete') {
+                            handleAudioComplete(message);
+                        }
+                        else if (message.type === 'text_response') {
+                            handleTextResponse(message);
+                        }
+                        else if (message.type === 'audio_response_compressed') {
+                            handleCompressedAudioResponse(message);
+                        }
+                        else if (message.type === 'audio_response') {
+                            handleAudioResponse(message);
+                        }
+                        else if (message.type === 'error') {
+                            handleError(message.message);
+                        }
+                    } catch (error) {
+                        console.error('Error processing WebSocket message:', error);
+                        console.error('Message size:', event.data ? event.data.length : 'null');
+                        statusMessage.textContent = 'ERROR PROCESSING RESPONSE';
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateStatus('ERROR', 'disconnected');
+                    statusMessage.textContent = 'CONNECTION ERROR';
+                };
+
+                ws.onclose = (event) => {
+                    console.log('WebSocket closed. Code:', event.code, 'Reason:', event.reason || 'none');
+                    updateStatus('DISCONNECTED', 'disconnected');
+                    statusMessage.textContent = 'RECONNECTING...';
+                    setTimeout(connect, 3000);
+                };
+            } catch (error) {
+                console.error('Connection error:', error);
+                updateStatus('FAILED', 'disconnected');
+                setTimeout(connect, 5000);
+            }
+        }
+
+        // Update connection status
+        function updateStatus(text, status) {
+            statusText.textContent = text;
+            statusDot.className = `status-dot ${status}`;
+        }
+
+        // Voice mode - Click to toggle conversation mode
+        harveyCircle.addEventListener('click', (e) => {
+            console.log('🔴 Harvey circle CLICKED!', {
+                voiceModeHidden: voiceMode.classList.contains('hidden'),
+                conversationMode: conversationMode,
+                isVoiceMode: isVoiceMode,
+                wsConnected: ws && ws.readyState === WebSocket.OPEN
+            });
+
+            // Visual feedback
+            harveyCircle.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                harveyCircle.style.transform = '';
+            }, 100);
+
+            e.preventDefault();
+            e.stopPropagation();
+            toggleConversationMode();
+        });
+
+        // Touch support
+        harveyCircle.addEventListener('touchstart', (e) => {
+            console.log('🔴 Harvey circle TOUCHED!', {
+                voiceModeHidden: voiceMode.classList.contains('hidden'),
+                conversationMode: conversationMode,
+                isVoiceMode: isVoiceMode,
+                wsConnected: ws && ws.readyState === WebSocket.OPEN
+            });
+
+            // Visual feedback
+            harveyCircle.style.transform = 'scale(0.95)';
+
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        harveyCircle.addEventListener('touchend', (e) => {
+            console.log('🔴 Harvey circle TOUCH END!');
+
+            // Reset visual feedback
+            setTimeout(() => {
+                harveyCircle.style.transform = '';
+            }, 100);
+
+            e.preventDefault();
+            e.stopPropagation();
+            toggleConversationMode();
+        });
+
+        // Check if getUserMedia is supported
+        function checkMicrophoneSupport() {
+            // Check for modern API
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                return 'modern';
+            }
+            // Check for webkit (Safari)
+            if (navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                navigator.mozGetUserMedia || navigator.msGetUserMedia) {
+                return 'legacy';
+            }
+            return false;
+        }
+
+        // Get user media with fallback for Safari
+        async function getUserMediaStream(constraints) {
+            // Try modern API first
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                return await navigator.mediaDevices.getUserMedia(constraints);
+            }
+
+            // Fallback to webkit for Safari
+            const getUserMedia = navigator.getUserMedia ||
+                                navigator.webkitGetUserMedia ||
+                                navigator.mozGetUserMedia ||
+                                navigator.msGetUserMedia;
+
+            if (!getUserMedia) {
+                throw new Error('getUserMedia is not supported in this browser');
+            }
+
+            // Wrap in promise for older API
+            return new Promise((resolve, reject) => {
+                getUserMedia.call(navigator, constraints, resolve, reject);
+            });
+        }
+
+        // Start recording (press and hold)
+        async function startRecording() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                statusMessage.textContent = 'NOT CONNECTED';
+                alert('Not connected to server. Please wait...');
+                return;
+            }
+
+            const micSupport = checkMicrophoneSupport();
+            if (!micSupport) {
+                alert('⚠️ VOICE NOT SUPPORTED\n\nPlease use CHAT MODE instead!');
+                statusMessage.textContent = 'USE CHAT MODE';
+                return;
+            }
+
+            try {
+                const stream = await getUserMediaStream({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                    mimeType = 'audio/mp4';
+                }
+                if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+                    mimeType = '';
+                }
+
+                const recorderOptions = mimeType ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const actualMimeType = mediaRecorder.mimeType || mimeType;
+                    const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+                    await sendAudioMessage(audioBlob, actualMimeType);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+
+                harveyCircle.classList.add('active');
+                statusMessage.textContent = 'LISTENING...';
+                statusMessage.classList.add('listening');
+
+            } catch (error) {
+                console.error('Microphone error:', error);
+                statusMessage.textContent = 'MIC NOT AVAILABLE';
+                alert('⚠️ Microphone access denied. Please use CHAT MODE instead!');
+            }
+        }
+
+        // Stop recording (release)
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+
+                harveyCircle.classList.remove('active');
+                statusMessage.textContent = 'PROCESSING...';
+                statusMessage.classList.remove('listening');
+            }
+        }
+
+        // Unlock audio playback (must be called from user interaction)
+        async function unlockAudio() {
+            if (audioUnlocked) return;
+
+            try {
+                // Play silent audio to unlock playback
+                const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+                await silentAudio.play();
+                audioUnlocked = true;
+                console.log('Audio playback unlocked');
+            } catch (error) {
+                console.warn('Failed to unlock audio:', error);
+            }
+        }
+
+        // Toggle conversation mode
+        async function toggleConversationMode() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                statusMessage.textContent = 'NOT CONNECTED';
+                alert('Not connected to server. Please wait...');
+                return;
+            }
+
+            // Unlock audio on first interaction
+            await unlockAudio();
+
+            // If already in conversation mode and Harvey is speaking, interrupt!
+            if (conversationMode && isHarveySpeaking) {
+                console.log('Interrupting Harvey to speak');
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+                isHarveySpeaking = false;
+                await startConversationTurn();
+                return;
+            }
+
+            // Toggle mode
+            conversationMode = !conversationMode;
+
+            if (conversationMode) {
+                // Enter conversation mode
+                statusMessage.textContent = 'CONVERSATION MODE - SPEAK NOW';
+                harveyCircle.style.borderColor = '#00ff00';
+                await startConversationTurn();
+            } else {
+                // Exit conversation mode
+                stopConversationMode();
+            }
+        }
+
+        // Start a conversation turn with VAD-based silence detection
+        async function startConversationTurn() {
+            if (!conversationMode) return;
+
+            // INTERRUPTION: If Harvey is speaking, stop him!
+            if (isHarveySpeaking) {
+                console.log('User interrupting Harvey!');
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+                isHarveySpeaking = false;
+            }
+
+            const micSupport = checkMicrophoneSupport();
+            if (!micSupport) {
+                alert('⚠️ VOICE NOT SUPPORTED\n\nPlease use CHAT MODE instead!');
+                statusMessage.textContent = 'USE CHAT MODE';
+                conversationMode = false;
+                return;
+            }
+
+            try {
+                const stream = await getUserMediaStream({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true  // Better for VAD
+                    }
+                });
+
+                recordingStream = stream;
+
+                // Setup audio context for VAD
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                const source = audioContext.createMediaStreamSource(stream);
+                vadState.analyser = audioContext.createAnalyser();
+                vadState.analyser.fftSize = 2048;
+                vadState.analyser.smoothingTimeConstant = 0.3;
+                source.connect(vadState.analyser);
+
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                    mimeType = 'audio/mp4';
+                }
+                if (!MediaRecorder.isTypeSupported('audio/mp4')) {
+                    mimeType = '';
+                }
+
+                const recorderOptions = mimeType ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    console.log('Recording stopped by VAD, processing audio...');
+                    vadState.monitoringActive = false;
+
+                    const actualMimeType = mediaRecorder.mimeType || mimeType;
+                    const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+                    console.log('Audio blob created:', audioBlob.size, 'bytes, type:', audioBlob.type);
+
+                    // Check minimum duration
+                    const duration = Date.now() - vadState.recordingStart;
+                    console.log('Recording duration:', duration, 'ms');
+
+                    if (duration < VAD_CONFIG.minRecordingDuration) {
+                        console.log('Recording too short, discarding');
+                        harveyCircle.classList.remove('active');
+                        statusMessage.textContent = 'SPEAK CLEARLY';
+                        statusMessage.classList.remove('listening');
+
+                        // Restart listening if still in conversation mode
+                        if (conversationMode) {
+                            setTimeout(() => startConversationTurn(), 500);
+                        }
+                        return;
+                    }
+
+                    // Send audio for processing
+                    console.log('Calling sendAudioMessage...');
+                    try {
+                        await sendAudioMessage(audioBlob, actualMimeType);
+                        console.log('sendAudioMessage completed');
+                    } catch (error) {
+                        console.error('Error in sendAudioMessage:', error);
+                        statusMessage.textContent = 'SEND ERROR';
+                    }
+                };
+
+                // Start recording
+                mediaRecorder.start();
+                isRecording = true;
+                vadState.recordingStart = Date.now();
+                vadState.isDetectingSpeech = false;
+                vadState.silenceStart = null;
+
+                harveyCircle.classList.add('active');
+                statusMessage.textContent = 'LISTENING...';
+                statusMessage.classList.add('listening');
+
+                // Start VAD monitoring
+                monitorVoiceActivity();
+
+            } catch (error) {
+                console.error('Microphone error:', error);
+                statusMessage.textContent = 'MIC NOT AVAILABLE';
+                conversationMode = false;
+                harveyCircle.style.borderColor = '#ff0000';
+                alert('⚠️ Microphone access denied. Please use CHAT MODE instead!');
+            }
+        }
+
+        // Monitor voice activity and detect silence
+        function monitorVoiceActivity() {
+            if (!vadState.analyser || !isRecording) {
+                return;
+            }
+
+            vadState.monitoringActive = true;
+            const bufferLength = vadState.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function checkVAD() {
+                if (!vadState.monitoringActive || !isRecording || !conversationMode) {
+                    return;
+                }
+
+                // Get audio energy level
+                vadState.analyser.getByteFrequencyData(dataArray);
+                const energy = dataArray.reduce((sum, val) => sum + val, 0) / bufferLength / 255;
+
+                const now = Date.now();
+                const recordingDuration = now - vadState.recordingStart;
+
+                // Speech detected
+                if (energy > VAD_CONFIG.energyThreshold) {
+                    vadState.isDetectingSpeech = true;
+                    vadState.silenceStart = null;
+                    statusMessage.textContent = 'LISTENING... 🎤';
+                }
+                // Silence detected after speech
+                else if (vadState.isDetectingSpeech) {
+                    if (!vadState.silenceStart) {
+                        vadState.silenceStart = now;
+                        console.log('Silence started');
+                    }
+
+                    const silenceDuration = now - vadState.silenceStart;
+                    const silenceSeconds = (silenceDuration / 1000).toFixed(1);
+                    statusMessage.textContent = `LISTENING... (silence ${silenceSeconds}s)`;
+
+                    // End turn if silence threshold reached
+                    if (silenceDuration >= VAD_CONFIG.silenceDuration) {
+                        console.log('Silence threshold reached, ending turn');
+                        stopRecordingVAD();
+                        return;
+                    }
+                }
+
+                // Safety: maximum duration
+                if (recordingDuration >= VAD_CONFIG.maxRecordingDuration) {
+                    console.log('Max duration reached, ending turn');
+                    stopRecordingVAD();
+                    return;
+                }
+
+                // Continue monitoring
+                requestAnimationFrame(checkVAD);
+            }
+
+            checkVAD();
+        }
+
+        // Stop recording via VAD
+        function stopRecordingVAD() {
+            if (mediaRecorder && isRecording) {
+                console.log('VAD stopping recording');
+                mediaRecorder.stop();
+                isRecording = false;
+                vadState.monitoringActive = false;
+
+                // Stop the stream
+                if (recordingStream) {
+                    recordingStream.getTracks().forEach(track => track.stop());
+                    recordingStream = null;
+                }
+
+                harveyCircle.classList.remove('active');
+                statusMessage.textContent = 'PROCESSING...';
+                statusMessage.classList.remove('listening');
+            }
+        }
+
+        // Stop conversation mode
+        function stopConversationMode() {
+            conversationMode = false;
+            isHarveySpeaking = false;
+
+            // Clear any timeouts
+            if (silenceTimeout) {
+                clearTimeout(silenceTimeout);
+                silenceTimeout = null;
+            }
+
+            // Stop recording if active
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+            }
+
+            // Stop stream
+            if (recordingStream) {
+                recordingStream.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+            }
+
+            // Reset UI
+            harveyCircle.classList.remove('active');
+            harveyCircle.style.borderColor = '#ff0000';
+            statusMessage.textContent = 'PRESS TO ACTIVATE';
+            statusMessage.classList.remove('listening');
+        }
+
+        // Send audio message
+        async function sendAudioMessage(audioBlob, mimeType) {
+            console.log('sendAudioMessage called with blob:', audioBlob.size, 'bytes');
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.error('WebSocket not connected! State:', ws ? ws.readyState : 'null');
+                statusMessage.textContent = 'NOT CONNECTED';
+                return;
+            }
+
+            console.log('WebSocket connected, processing audio...');
+
+            try {
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                console.log('ArrayBuffer created:', arrayBuffer.byteLength, 'bytes');
+
+                // Convert to base64 in chunks to avoid mobile memory issues
+                const uint8Array = new Uint8Array(arrayBuffer);
+                let binary = '';
+                const chunkSize = 8192; // Process 8KB at a time
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                    const chunk = uint8Array.subarray(i, i + chunkSize);
+                    binary += String.fromCharCode.apply(null, chunk);
+                }
+                const base64Audio = btoa(binary);
+                console.log('Base64 encoded:', base64Audio.length, 'characters');
+
+                // Extract format from mime type (e.g., 'audio/webm' -> 'webm')
+                const format = mimeType ? mimeType.split('/')[1].split(';')[0] : 'wav';
+
+                // Check if pako is available for compression support
+                const supportsCompression = typeof pako !== 'undefined';
+
+                console.log('Sending audio:', {
+                    size: arrayBuffer.byteLength,
+                    format: format,
+                    mimeType: mimeType,
+                    supportsCompression: supportsCompression
+                });
+
+                const message = JSON.stringify({
+                    type: 'audio',
+                    data: base64Audio,
+                    sample_rate: 16000,
+                    format: format,
+                    mime_type: mimeType,
+                    supports_compression: supportsCompression,
+                    context: {
+                        current_datetime: getCurrentDateTime()
+                    }
+                });
+
+                console.log('Sending WebSocket message, size:', message.length, 'chars');
+                ws.send(message);
+                console.log('WebSocket message sent!');
+
+            } catch (error) {
+                console.error('Error in sendAudioMessage:', error);
+                statusMessage.textContent = 'ENCODING ERROR';
+                throw error;
+            }
+        }
+
+        // Get current date/time in Eastern Time
+        function getCurrentDateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'America/New_York',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
+                timeZoneName: 'short'
+            };
+            return now.toLocaleString('en-US', options);
+        }
+
+        // Handle compressed audio response
+        function handleCompressedAudioResponse(message) {
+            console.log('handleCompressedAudioResponse called');
+            console.log(`Compressed: ${message.compressed_size} bytes (${(message.compressed_size / message.original_size * 100).toFixed(1)}% of original ${message.original_size} bytes)`);
+
+            try {
+                // Show transcription
+                if (message.transcription) {
+                    transcriptionText.textContent = message.transcription;
+                    transcriptionDisplay.style.display = 'block';
+                    console.log('Transcription:', message.transcription);
+                }
+
+                // Check if pako is available
+                if (typeof pako === 'undefined') {
+                    console.error('Pako library not loaded! Falling back to uncompressed mode.');
+                    statusMessage.textContent = 'ERROR: COMPRESSION NOT SUPPORTED';
+                    return;
+                }
+
+                // Decode base64
+                const compressedData = atob(message.audio);
+                const compressedArray = new Uint8Array(compressedData.length);
+                for (let i = 0; i < compressedData.length; i++) {
+                    compressedArray[i] = compressedData.charCodeAt(i);
+                }
+
+                console.log('Decompressing audio...');
+                // Decompress using pako
+                const decompressed = pako.inflate(compressedArray);
+                console.log(`Decompressed: ${decompressed.length} bytes`);
+
+                // Create audio blob
+                const audioBlob = new Blob([decompressed], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Show latency
+                latencyDisplay.style.display = 'block';
+                latencyValue.textContent = message.latency_ms;
+
+                // Update status
+                isHarveySpeaking = true;
+                statusMessage.textContent = 'HARVEY SPEAKING...';
+                statusMessage.classList.remove('listening');
+                harveyCircle.classList.remove('active');
+
+                // Play audio
+                audioPlayer.src = audioUrl;
+
+                // Try to play with detailed error logging
+                const playPromise = audioPlayer.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Compressed audio playback started successfully');
+                    }).catch(error => {
+                        console.error('Compressed audio playback failed:', error);
+                        console.error('Error name:', error.name);
+                        console.error('Error message:', error.message);
+
+                        // Show specific error to user
+                        if (error.name === 'NotAllowedError') {
+                            statusMessage.textContent = 'TAP TO PLAY AUDIO';
+                            // User must interact - add click handler
+                            const playOnClick = () => {
+                                audioPlayer.play();
+                                document.removeEventListener('click', playOnClick);
+                                statusMessage.textContent = 'HARVEY SPEAKING...';
+                            };
+                            document.addEventListener('click', playOnClick);
+                        } else {
+                            statusMessage.textContent = `PLAYBACK ERROR: ${error.name}`;
+                        }
+                    });
+                } else {
+                    console.log('Play promise is undefined, playback may have started');
+                }
+
+                audioPlayer.onended = () => {
+                    console.log('Compressed audio playback ended');
+                    URL.revokeObjectURL(audioUrl);
+                    isHarveySpeaking = false;
+
+                    if (conversationMode) {
+                        // Continue conversation - start next turn
+                        console.log('Conversation mode: starting next turn');
+                        statusMessage.textContent = 'YOUR TURN - SPEAK NOW';
+                        setTimeout(() => {
+                            startConversationTurn();
+                        }, 500);
+                    } else {
+                        // Normal mode - reset
+                        console.log('Normal mode: resetting');
+                        statusMessage.textContent = 'PRESS TO ACTIVATE';
+                    }
+                };
+
+                // Add to chat history if in chat mode
+                if (!isVoiceMode) {
+                    addChatMessage('user', `🎤 ${message.transcription}`);
+                    addChatMessage('assistant', message.text, message.latency_ms);
+                }
+
+            } catch (error) {
+                console.error('Error handling compressed audio:', error);
+                statusMessage.textContent = 'DECOMPRESSION ERROR';
+            }
+        }
+
+        // Handle audio response (uncompressed fallback)
+        function handleAudioResponse(message) {
+            console.log('handleAudioResponse called (uncompressed)');
+
+            // Show latency
+            latencyDisplay.style.display = 'block';
+            latencyValue.textContent = message.latency_ms;
+
+            // Update status
+            isHarveySpeaking = true;
+            statusMessage.textContent = 'HARVEY SPEAKING...';
+            statusMessage.classList.remove('listening');
+            harveyCircle.classList.remove('active');
+
+            // Play audio response
+            playAudioResponse(message.audio, () => {
+                console.log('Audio playback ended callback');
+                // When audio finishes
+                isHarveySpeaking = false;
+
+                if (conversationMode) {
+                    // Continue conversation - start next turn
+                    console.log('Conversation mode: starting next turn');
+                    statusMessage.textContent = 'YOUR TURN - SPEAK NOW';
+                    setTimeout(() => {
+                        startConversationTurn();
+                    }, 500);
+                } else {
+                    // Normal mode - reset
+                    console.log('Normal mode: resetting');
+                    statusMessage.textContent = 'PRESS TO ACTIVATE';
+                }
+            });
+
+            // Add to chat history if in chat mode
+            if (!isVoiceMode) {
+                addChatMessage('user', `🎤 ${message.transcription}`);
+                addChatMessage('assistant', message.text, message.latency_ms);
+            }
+        }
+
+        // Handle text response
+        function handleTextResponse(message) {
+            // Play audio response
+            playAudioResponse(message.audio);
+
+            // Show latency
+            latencyDisplay.style.display = 'block';
+            latencyValue.textContent = message.latency_ms;
+
+            // Add to chat
+            addChatMessage('assistant', message.text, message.latency_ms);
+        }
+
+        // Play audio response
+        function playAudioResponse(base64Audio, onEnded = null) {
+            if (!base64Audio) {
+                console.error('No audio data provided to playAudioResponse');
+                return;
+            }
+
+            console.log('Playing audio response:', {
+                base64Length: base64Audio.length,
+                base64Preview: base64Audio.substring(0, 50)
+            });
+
+            try {
+                const audioData = atob(base64Audio);
+                console.log('Decoded base64 audio:', audioData.length, 'bytes');
+
+                const audioArray = new Uint8Array(audioData.length);
+                for (let i = 0; i < audioData.length; i++) {
+                    audioArray[i] = audioData.charCodeAt(i);
+                }
+
+                const audioBlob = new Blob([audioArray], { type: 'audio/wav' });
+                console.log('Created audio blob:', audioBlob.size, 'bytes, type:', audioBlob.type);
+
+                const audioUrl = URL.createObjectURL(audioBlob);
+                console.log('Created audio URL:', audioUrl);
+
+                audioPlayer.src = audioUrl;
+                console.log('Set audio player source, attempting to play...');
+
+                const playPromise = audioPlayer.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Audio playback started successfully');
+                    }).catch(error => {
+                        console.error('Audio playback failed:', error);
+                    });
+                }
+
+                audioPlayer.onended = () => {
+                    console.log('Audio playback ended');
+                    URL.revokeObjectURL(audioUrl);
+                    if (onEnded) {
+                        onEnded();
+                    }
+                };
+            } catch (error) {
+                console.error('Error playing audio:', error);
+            }
+        }
+
+        // Handle error
+        function handleError(message) {
+            statusMessage.textContent = 'ERROR';
+            console.error('Server error:', message);
+        }
+
+        // Streaming audio state
+        let audioChunkQueue = [];
+        let isPlayingChunks = false;
+        let currentChunkIndex = 0;
+
+        // Handle first token
+        function handleFirstToken(time_ms) {
+            console.log(`⚡ TIME TO FIRST TOKEN: ${time_ms}ms`);
+            const ttftDisplay = document.getElementById('ttftDisplay');
+            const ttftValue = document.getElementById('ttftValue');
+            ttftValue.textContent = time_ms;
+            ttftDisplay.style.display = 'block';
+
+            statusMessage.textContent = 'HARVEY RESPONDING...';
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                ttftDisplay.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle streaming audio chunk
+        async function handleAudioChunk(message) {
+            console.log(`Received audio chunk ${message.chunk_index}: "${message.sentence}"`);
+
+            try {
+                // Decompress audio
+                const compressedData = atob(message.audio);
+                const compressedArray = new Uint8Array(compressedData.length);
+                for (let i = 0; i < compressedData.length; i++) {
+                    compressedArray[i] = compressedData.charCodeAt(i);
+                }
+
+                const decompressed = pako.inflate(compressedArray);
+                const audioBlob = new Blob([decompressed], { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Add to queue
+                audioChunkQueue.push({
+                    index: message.chunk_index,
+                    url: audioUrl,
+                    sentence: message.sentence
+                });
+
+                // Start playing if not already playing
+                if (!isPlayingChunks) {
+                    playNextChunk();
+                }
+
+            } catch (error) {
+                console.error('Error processing audio chunk:', error);
+            }
+        }
+
+        // Play audio chunks sequentially
+        async function playNextChunk() {
+            if (audioChunkQueue.length === 0) {
+                isPlayingChunks = false;
+                return;
+            }
+
+            isPlayingChunks = true;
+            const chunk = audioChunkQueue.shift();
+
+            console.log(`Playing chunk ${chunk.index}: "${chunk.sentence}"`);
+            statusMessage.textContent = 'HARVEY SPEAKING...';
+
+            const audio = new Audio(chunk.url);
+
+            audio.onended = () => {
+                URL.revokeObjectURL(chunk.url);
+                // Play next chunk
+                playNextChunk();
+            };
+
+            audio.onerror = (error) => {
+                console.error('Audio playback error:', error);
+                URL.revokeObjectURL(chunk.url);
+                // Try next chunk
+                playNextChunk();
+            };
+
+            try {
+                await audio.play();
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                URL.revokeObjectURL(chunk.url);
+                playNextChunk();
+            }
+        }
+
+        // Handle audio complete
+        function handleAudioComplete(message) {
+            console.log('Audio streaming complete');
+            console.log('Full response text:', message.text);
+
+            // Wait for all chunks to finish playing
+            const checkComplete = setInterval(() => {
+                if (!isPlayingChunks && audioChunkQueue.length === 0) {
+                    clearInterval(checkComplete);
+                    statusMessage.textContent = 'PRESS TO ACTIVATE';
+                }
+            }, 100);
+        }
+
+        // Chat mode toggle
+        chatToggle.addEventListener('click', () => {
+            chatMode.classList.add('active');
+            voiceMode.classList.add('hidden');
+            isVoiceMode = false;
+            chatInput.focus();
+        });
+
+        closeChat.addEventListener('click', () => {
+            chatMode.classList.remove('active');
+            voiceMode.classList.remove('hidden');
+            isVoiceMode = true;
+        });
+
+        // Send text message
+        function sendTextMessage() {
+            const text = chatInput.value.trim();
+
+            console.log('Send text message:', text);
+            console.log('WebSocket state:', ws ? ws.readyState : 'null');
+
+            if (!text) {
+                console.log('Empty message, ignoring');
+                return;
+            }
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected to server. Please wait...');
+                return;
+            }
+
+            addChatMessage('user', text);
+            chatInput.value = '';
+
+            // Add loading indicator
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message assistant';
+            loadingMsg.id = 'loadingMsg';
+            loadingMsg.innerHTML = `
+                <div class="message-bubble">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(loadingMsg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            console.log('Sending text message to server...');
+            ws.send(JSON.stringify({
+                type: 'text',
+                text: text
+            }));
+        }
+
+        sendBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Send button clicked');
+            sendTextMessage();
+        });
+
+        sendBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Send button touched');
+            sendTextMessage();
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendTextMessage();
+            }
+        });
+
+        // Add chat message
+        function addChatMessage(sender, text, latency = null) {
+            // Remove loading indicator
+            const loadingMsg = document.getElementById('loadingMsg');
+            if (loadingMsg) loadingMsg.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            let metaHTML = '';
+            if (latency) {
+                metaHTML = `<div class="message-meta">⚡ ${latency}ms</div>`;
+            }
+
+            messageDiv.innerHTML = `
+                <div class="message-bubble">${text}</div>
+                ${metaHTML}
+            `;
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Initialize
+        window.onload = () => {
+            console.log('🟢 Page loaded, initializing...');
+            console.log('Harvey circle element:', harveyCircle);
+            console.log('Voice mode element:', voiceMode);
+            console.log('Voice mode hidden?', voiceMode.classList.contains('hidden'));
+
+            // Ensure voice mode is visible on load
+            voiceMode.classList.remove('hidden');
+            isVoiceMode = true;
+
+            connect();
+
+            // Check microphone support on load
+            const micSupport = checkMicrophoneSupport();
+            console.log('Microphone support:', micSupport);
+
+            if (!micSupport) {
+                // No microphone support - show message and switch to chat
+                statusMessage.textContent = 'VOICE NOT SUPPORTED - USE CHAT';
+                statusMessage.style.fontSize = '14px';
+
+                setTimeout(() => {
+                    if (confirm('⚠️ VOICE MODE NOT AVAILABLE\n\nYour browser doesn\'t support voice input.\n\nSwitch to CHAT MODE now?')) {
+                        chatMode.classList.add('active');
+                        voiceMode.classList.add('hidden');
+                        isVoiceMode = false;
+                        chatInput.focus();
+                    }
+                }, 2000);
+            } else if (micSupport === 'legacy') {
+                console.log('Using legacy getUserMedia API (Safari)');
+            }
+        };
+    </script>
+</body>
+</html>
