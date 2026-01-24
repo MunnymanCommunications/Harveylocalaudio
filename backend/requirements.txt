@@ -16,17 +16,18 @@ pyaudio==0.2.14
 
 # Speech Recognition (Whisper)
 openai-whisper==20231117
-torch==2.1.2
-torchaudio==2.1.2
+torch>=2.2.0
+torchaudio>=2.2.0
 
 # TTS (Coqui XTTS)
 TTS==0.22.0
 pydub==0.25.1
+# TTS Alternative (Edge-TTS - better Python 3.12 support)
+edge-tts>=6.1.0
 
 # LLM Integration (Ollama)
 ollama==0.1.6
 aiohttp==3.9.1
 
 # Utilities
-uuid==1.30
-secrets-manager==1.0.0
+# uuid and secrets are built-in to Python, no need to install

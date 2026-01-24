@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Harvey AI Assistant
+Comment=Local Low-Latency AI Voice Assistant
+Exec=/home/nic/Harveylocalaudio/start_harvey.sh
+Icon=audio-input-microphone
+Terminal=true
+Categories=AudioVideo;Audio;Utility;
+Keywords=AI;Voice;Assistant;Speech;
+StartupNotify=true

@@ -12,6 +12,7 @@ import numpy as np
 import soundfile as sf
 import torch
 import whisper
+import av
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,7 @@ class WhisperSTT:
     def _load_audio(self, audio_data: bytes, sample_rate: int) -> np.ndarray:
         """
         Load audio from bytes and convert to format expected by Whisper
+        Supports WAV, WebM, MP4, and other formats via PyAV
 
         Args:
             audio_data: Raw audio bytes
@@ -110,9 +112,42 @@ class WhisperSTT:
         Returns:
             Numpy array of audio samples
         """
-        # Read audio from bytes
         audio_io = io.BytesIO(audio_data)
-        audio_array, sr = sf.read(audio_io)
+
+        try:
+            # Try soundfile first (fastest for WAV)
+            audio_array, sr = sf.read(audio_io)
+        except Exception as e:
+            logger.info(f"soundfile failed, trying PyAV: {e}")
+            # Fall back to PyAV for webm/mp4/other formats
+            try:
+                audio_io.seek(0)
+                container = av.open(audio_io, 'r')
+                audio_stream = next((s for s in container.streams if s.type == 'audio'), None)
+
+                if audio_stream is None:
+                    raise ValueError("No audio stream found in file")
+
+                # Decode audio frames
+                frames = []
+                for frame in container.decode(audio_stream):
+                    array = frame.to_ndarray()
+                    frames.append(array)
+
+                container.close()
+
+                if not frames:
+                    raise ValueError("No audio frames decoded")
+
+                # Concatenate all frames
+                audio_array = np.concatenate(frames, axis=1).T
+                sr = audio_stream.rate
+
+                logger.info(f"PyAV decoded: shape={audio_array.shape}, sr={sr}")
+
+            except Exception as e2:
+                logger.error(f"Both soundfile and PyAV failed: {e2}")
+                raise ValueError(f"Could not decode audio: {e2}")
 
         # Convert to mono if stereo
         if len(audio_array.shape) > 1:

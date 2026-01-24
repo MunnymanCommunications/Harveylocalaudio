@@ -8,10 +8,9 @@ import io
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-
-import numpy as np
 import soundfile as sf
 import torch
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -91,25 +90,27 @@ class CoquiTTS:
             raise RuntimeError("Coqui TTS not initialized")
 
         try:
-            logger.debug(f"Synthesizing: {text[:100]}...")
+            logger.info(f"Synthesizing text ({len(text)} chars): {text[:100]}...")
 
-            # Run synthesis in thread pool
+            # Run synthesis in thread pool (blocking operation)
             loop = asyncio.get_event_loop()
-            audio_data = await loop.run_in_executor(
+            wav_bytes = await loop.run_in_executor(
                 None,
                 self._synthesize_sync,
                 text
             )
 
-            return audio_data
+            logger.info(f"Synthesized audio: {len(wav_bytes)} bytes")
+            return wav_bytes
 
         except Exception as e:
-            logger.error(f"TTS synthesis failed: {e}")
-            # Return silence as fallback
-            return self._generate_silence(1.0)
+            logger.error(f"TTS synthesis failed: {e}", exc_info=True)
+            silence = self._generate_silence(1.0)
+            logger.info(f"Returning silence due to error: {len(silence)} bytes")
+            return silence
 
     def _synthesize_sync(self, text: str) -> bytes:
-        """Synchronous TTS synthesis"""
+        """Synchronous synthesis (runs in thread pool)"""
         try:
             # Get voice sample if using voice cloning
             speaker_wav = self.voice_samples.get(self.voice)
@@ -135,7 +136,8 @@ class CoquiTTS:
                 wav = np.array(wav, dtype=np.float32)
 
             # Normalize audio
-            wav = wav / np.max(np.abs(wav))
+            if np.max(np.abs(wav)) > 0:
+                wav = wav / np.max(np.abs(wav))
 
             # Convert to WAV bytes
             wav_io = io.BytesIO()

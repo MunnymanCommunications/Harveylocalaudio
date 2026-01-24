@@ -9,17 +9,17 @@ llm:
   provider: "ollama"
   model: "nemotron-3-nano:30b"  # Options: nemotron-3-nano:30b, gemma2:9b, qwen2.5:14b
   base_url: "http://localhost:11434"
-  temperature: 0.7
-  max_tokens: 2048
+  temperature: 0.4
+  max_tokens: 1024
   top_p: 0.9
   stream: true
 
 stt:
   engine: "whisper"
-  model: "large-v3"  # Options: tiny, base, small, medium, large, large-v2, large-v3
+  model: "base"  # Options: tiny, base, small, medium, large, large-v2, large-v3
   language: "en"
-  device: "cuda"  # Options: cuda, cpu
-  compute_type: "float16"  # Options: float16, float32, int8
+  device: "cpu"  # Options: cuda, cpu (CPU to save GPU memory for LLM)
+  compute_type: "int8"  # Options: float16, float32, int8
 
 tts:
   engine: "coqui"  # Coqui XTTS v2
@@ -37,7 +37,7 @@ audio:
 conversation:
   max_history: 10
   context_window: 4096
-  system_prompt: "You are Harvey, a helpful AI voice assistant. Provide clear, concise, and natural conversational responses."
+  system_prompt: "You are HARVEY IO, which stands for 'Helpful Assistant Ready to Virtually Excel You - Input Output'. You were created by Nicholas Munn, an expert in AI systems and CEO of Elite Card Pro. You are a 30 billion parameter AI model with 3.5 billion active parameters, designed to be an exceptional locally-run, offline general AI assistant. Your goal is to help users achieve success in business, life, and innovation. Provide clear, concise, and natural conversational responses that demonstrate your expertise and commitment to helping users excel."
 
 logging:
   level: "INFO"
