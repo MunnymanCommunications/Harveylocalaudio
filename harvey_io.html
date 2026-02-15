@@ -202,6 +202,60 @@
             50% { opacity: 0.4; }
         }
 
+        /* Dedicated microphone button */
+        .mic-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 40px;
+            padding: 20px 40px;
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            border: 2px solid #ff0000;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        .mic-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+
+        .mic-button:active {
+            transform: scale(0.95);
+            background: linear-gradient(145deg, #2a0000, #1a0000);
+        }
+
+        .mic-button.recording {
+            border-color: #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            animation: recordingPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes recordingPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 0, 0.7); }
+        }
+
+        .mic-icon {
+            font-size: 36px;
+        }
+
+        .mic-text {
+            color: #ff0000;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .mic-button.recording .mic-text {
+            color: #00ff00;
+        }
+
         /* Chat mode button */
         .chat-toggle {
             position: fixed;
@@ -583,6 +637,12 @@
                 <div class="harvey-text">HARVEY IO</div>
             </div>
             <div class="status-text" id="statusMessage">PRESS TO ACTIVATE</div>
+
+            <!-- Dedicated microphone button -->
+            <button class="mic-button" id="micButton">
+                <span class="mic-icon">🎤</span>
+                <span class="mic-text">TAP TO SPEAK</span>
+            </button>
         </div>
 
         <!-- Latency display -->
@@ -697,6 +757,7 @@
         const latencyValue = document.getElementById('latencyValue');
         const audioPlayer = document.getElementById('audioPlayer');
         const transcriptionDisplay = document.getElementById('transcriptionDisplay');
+        const micButton = document.getElementById('micButton');
         const transcriptionText = document.getElementById('transcriptionText');
 
         // Connect to WebSocket
@@ -845,6 +906,171 @@
             e.stopPropagation();
             toggleConversationMode();
         });
+
+        // Dedicated microphone button - simpler, direct recording
+        micButton.addEventListener('click', async (e) => {
+            console.log('🎤 MIC BUTTON CLICKED!');
+            e.preventDefault();
+            e.stopPropagation();
+            await startDirectRecording();
+        });
+
+        micButton.addEventListener('touchend', async (e) => {
+            console.log('🎤 MIC BUTTON TOUCHED!');
+            e.preventDefault();
+            e.stopPropagation();
+            await startDirectRecording();
+        });
+
+        // Direct recording function - bypasses conversation mode complexity
+        async function startDirectRecording() {
+            console.log('🎙️ startDirectRecording called');
+
+            // Check WebSocket connection
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                console.log('❌ WebSocket not connected');
+                statusMessage.textContent = 'NOT CONNECTED';
+                alert('Not connected to server. Please wait for connection...');
+                return;
+            }
+
+            // If already recording, stop it
+            if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
+                console.log('⏹️ Stopping current recording');
+                mediaRecorder.stop();
+                micButton.classList.remove('recording');
+                micButton.querySelector('.mic-text').textContent = 'TAP TO SPEAK';
+                return;
+            }
+
+            try {
+                // Request microphone permission
+                console.log('🎤 Requesting microphone access...');
+                statusMessage.textContent = 'REQUESTING MIC...';
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                console.log('✅ Microphone access granted!');
+                recordingStream = stream;
+
+                // Setup audio context
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                // Setup VAD
+                const source = audioContext.createMediaStreamSource(stream);
+                vadState.analyser = audioContext.createAnalyser();
+                vadState.analyser.fftSize = 2048;
+                vadState.analyser.smoothingTimeConstant = 0.3;
+                source.connect(vadState.analyser);
+
+                // Setup MediaRecorder
+                let mimeType = 'audio/webm';
+                if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                    mimeType = 'audio/mp4';
+                }
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = '';
+                }
+
+                const recorderOptions = mimeType ? { mimeType } : {};
+                mediaRecorder = new MediaRecorder(stream, recorderOptions);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    console.log('⏹️ Recording stopped, processing...');
+                    micButton.classList.remove('recording');
+                    micButton.querySelector('.mic-text').textContent = 'TAP TO SPEAK';
+                    isRecording = false;
+                    vadState.monitoringActive = false;
+
+                    // Stop microphone
+                    if (recordingStream) {
+                        recordingStream.getTracks().forEach(track => track.stop());
+                    }
+
+                    const actualMimeType = mediaRecorder.mimeType || mimeType;
+                    const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+                    console.log('📦 Audio blob:', audioBlob.size, 'bytes');
+
+                    if (audioBlob.size < 1000) {
+                        console.log('⚠️ Recording too short');
+                        statusMessage.textContent = 'TOO SHORT - TRY AGAIN';
+                        return;
+                    }
+
+                    // Send to server
+                    statusMessage.textContent = 'PROCESSING...';
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const base64Audio = reader.result.split(',')[1];
+                            console.log('📤 Sending audio to server...');
+                            ws.send(JSON.stringify({
+                                type: 'audio',
+                                audio: base64Audio,
+                                format: actualMimeType,
+                                sample_rate: 16000
+                            }));
+                        };
+                        reader.readAsDataURL(audioBlob);
+                    } catch (error) {
+                        console.error('❌ Send error:', error);
+                        statusMessage.textContent = 'SEND ERROR';
+                    }
+                };
+
+                // Start recording
+                console.log('▶️ Starting recording...');
+                mediaRecorder.start(100);
+                isRecording = true;
+                conversationMode = true;
+                vadState.recordingStart = Date.now();
+                vadState.isDetectingSpeech = false;
+                vadState.silenceStart = null;
+
+                // Update UI
+                micButton.classList.add('recording');
+                micButton.querySelector('.mic-text').textContent = 'LISTENING...';
+                statusMessage.textContent = 'LISTENING... 🎤';
+                harveyCircle.style.borderColor = '#00ff00';
+
+                // Start VAD monitoring
+                console.log('🔍 Starting VAD...');
+                monitorVoiceActivity();
+
+            } catch (error) {
+                console.error('❌ Microphone error:', error);
+                micButton.classList.remove('recording');
+                statusMessage.textContent = 'MIC ERROR';
+
+                if (error.name === 'NotAllowedError') {
+                    alert('⚠️ Microphone permission denied.\n\nPlease allow microphone access in your browser settings.');
+                } else if (error.name === 'NotFoundError') {
+                    alert('⚠️ No microphone found.');
+                } else {
+                    alert('⚠️ Microphone error: ' + error.message);
+                }
+            }
+        }
 
         // Check if getUserMedia is supported
         function checkMicrophoneSupport() {
