@@ -14,7 +14,7 @@ import soundfile as sf
 
 from stt_engine import WhisperSTT
 from llm_client import OllamaClient
-from tts_engine import CoquiTTS
+from tts_engine_local import LocalPiperTTS as CoquiTTS  # Using Piper TTS (Python 3.12 compatible)
 
 logger = logging.getLogger(__name__)
 

@@ -25,13 +25,13 @@ echo "✅ Backend server started (PID: $SERVER_PID)"
 # Wait a moment for the server to start
 sleep 3
 
-# Open the web client in the default browser
-echo "🌐 Opening web client..."
+# Open the modern Harvey IO interface
+echo "🌐 Opening Harvey IO interface..."
 cd ..
-xdg-open "file://$(pwd)/web_client.html" 2>/dev/null || \
-    firefox "file://$(pwd)/web_client.html" 2>/dev/null || \
-    google-chrome "file://$(pwd)/web_client.html" 2>/dev/null || \
-    chromium "file://$(pwd)/web_client.html" 2>/dev/null
+xdg-open "file://$(pwd)/harvey_io.html" 2>/dev/null || \
+    firefox "file://$(pwd)/harvey_io.html" 2>/dev/null || \
+    google-chrome "file://$(pwd)/harvey_io.html" 2>/dev/null || \
+    chromium "file://$(pwd)/harvey_io.html" 2>/dev/null
 
 echo ""
 echo "✅ Harvey is ready!"

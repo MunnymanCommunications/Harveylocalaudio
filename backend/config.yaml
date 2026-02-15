@@ -7,7 +7,7 @@ server:
 
 llm:
   provider: "ollama"
-  model: "nemotron-3-nano:30b"  # Options: nemotron-3-nano:30b, gemma2:9b, qwen2.5:14b
+  model: "nemotron-mini"  # Options: nemotron-mini, gemma3:12b, gemma3:27b
   base_url: "http://localhost:11434"
   temperature: 0.4
   max_tokens: 1024
