@@ -1026,7 +1026,7 @@
                             console.log('📤 Sending audio to server...');
                             ws.send(JSON.stringify({
                                 type: 'audio',
-                                audio: base64Audio,
+                                data: base64Audio,
                                 format: actualMimeType,
                                 sample_rate: 16000
                             }));
