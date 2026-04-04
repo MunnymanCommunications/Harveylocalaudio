@@ -200,6 +200,91 @@
             color: #888;
             font-size: 14px;
         }
+
+        .model-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .model-option {
+            cursor: pointer;
+        }
+
+        .model-option input[type="radio"] {
+            display: none;
+        }
+
+        .model-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .model-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .model-option input[type="radio"]:checked + .model-card {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .model-card.recommended {
+            position: relative;
+        }
+
+        .model-name {
+            font-weight: 700;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .model-specs {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+            font-family: monospace;
+        }
+
+        .model-desc {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .hardware-req {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .hardware-req strong {
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -247,6 +332,68 @@
             </button>
         </div>
 
+        <div class="info-box" style="margin-top: 30px;">
+            <h3>🧠 Choose AI Model Size</h3>
+            <p style="margin-bottom: 15px;">Select based on your computer's capabilities:</p>
+
+            <div class="model-selector">
+                <label class="model-option">
+                    <input type="radio" name="model" value="gemma2:2b" onclick="selectModel('gemma2:2b')">
+                    <div class="model-card">
+                        <div class="model-name">⚡ Gemma 2B - Ultra Fast</div>
+                        <div class="model-specs">Size: ~1.5GB | RAM: 4GB | Response: <200ms</div>
+                        <div class="model-desc">Perfect for laptops, older computers, or when you want instant responses</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="model" value="qwen2.5:3b" onclick="selectModel('qwen2.5:3b')">
+                    <div class="model-card">
+                        <div class="model-name">🚀 Qwen 2.5 3B - Balanced</div>
+                        <div class="model-specs">Size: ~2GB | RAM: 6GB | Response: ~300ms</div>
+                        <div class="model-desc">Great balance of speed and intelligence - works on most computers</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="model" value="gemma2:9b" checked onclick="selectModel('gemma2:9b')">
+                    <div class="model-card recommended">
+                        <div class="model-name">⭐ Gemma 9B - Recommended</div>
+                        <div class="model-specs">Size: ~5.5GB | RAM: 8GB | Response: ~400ms</div>
+                        <div class="model-desc">Best overall choice - smart and fast on modern computers</div>
+                        <div class="badge">RECOMMENDED</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="model" value="qwen2.5:14b" onclick="selectModel('qwen2.5:14b')">
+                    <div class="model-card">
+                        <div class="model-name">💎 Qwen 2.5 14B - High Quality</div>
+                        <div class="model-specs">Size: ~9GB | RAM: 16GB | Response: ~600ms</div>
+                        <div class="model-desc">Excellent reasoning and language understanding</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="model" value="nemotron-mini:15b" onclick="selectModel('nemotron-mini:15b')">
+                    <div class="model-card">
+                        <div class="model-name">🎯 Nemotron Mini 15B - Advanced</div>
+                        <div class="model-specs">Size: ~9GB | RAM: 16GB | Response: ~700ms</div>
+                        <div class="model-desc">Powerful conversational AI with great personality</div>
+                    </div>
+                </label>
+
+                <label class="model-option">
+                    <input type="radio" name="model" value="nemotron-3-nano:30b" onclick="selectModel('nemotron-3-nano:30b')">
+                    <div class="model-card">
+                        <div class="model-name">🔥 Nemotron 30B - Maximum Power</div>
+                        <div class="model-specs">Size: ~17GB | RAM: 32GB+ | Response: ~800ms</div>
+                        <div class="model-desc">Best quality - requires powerful computer with GPU</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
         <button class="install-btn" onclick="startInstall()" id="installBtn">
             <span id="installText">📦 Install Harvey AI</span>
         </button>
@@ -278,6 +425,12 @@
 
     <script>
         let selectedPlatform = 'windows';
+        let selectedModel = 'gemma2:9b';
+
+        function selectModel(model) {
+            selectedModel = model;
+            console.log('Selected model:', model);
+        }
 
         function selectPlatform(platform) {
             selectedPlatform = platform;
@@ -336,25 +489,40 @@
             const statusEl = document.getElementById('status');
             statusEl.className = 'status show success';
 
+            // Store selected model for installer to read
+            localStorage.setItem('harveySelectedModel', selectedModel);
+
+            const modelNames = {
+                'gemma2:2b': 'Gemma 2B (Ultra Fast)',
+                'qwen2.5:3b': 'Qwen 2.5 3B (Balanced)',
+                'gemma2:9b': 'Gemma 9B (Recommended)',
+                'qwen2.5:14b': 'Qwen 2.5 14B (High Quality)',
+                'nemotron-mini:15b': 'Nemotron Mini 15B (Advanced)',
+                'nemotron-3-nano:30b': 'Nemotron 30B (Maximum Power)'
+            };
+
             let instructions = '';
             if (selectedPlatform === 'windows') {
                 instructions = `
                     <strong>Installation Starting...</strong><br><br>
+                    <strong>Selected Model:</strong> ${modelNames[selectedModel]}<br><br>
                     1. Double-click <strong>${installerPath}</strong> in the Harvey folder<br>
                     2. Click "Yes" when prompted for administrator access<br>
-                    3. Wait for installation to complete (10-30 minutes)<br>
-                    4. Look for "Harvey AI" icon on your desktop when done!<br>
+                    3. When asked, choose: <strong>${selectedModel}</strong><br>
+                    4. Wait for installation to complete (10-30 minutes)<br>
+                    5. Look for "Harvey AI" icon on your desktop when done!<br>
                     <br>
                     <em>The installer window will open automatically. Please follow the on-screen prompts.</em>
                 `;
 
-                // Try to launch
-                window.location.href = installerPath;
+                // Try to launch with model parameter
+                window.location.href = `${installerPath}?model=${selectedModel}`;
             } else {
                 instructions = `
                     <strong>Installation Instructions:</strong><br><br>
+                    <strong>Selected Model:</strong> ${modelNames[selectedModel]}<br><br>
                     1. Open Terminal (Applications → Utilities → Terminal)<br>
-                    2. Drag <strong>${installerPath}</strong> into the Terminal window<br>
+                    2. Type: bash ${installerPath} ${selectedModel}<br>
                     3. Press Enter and follow prompts<br>
                     4. Wait for installation to complete<br>
                     5. Look for "Harvey AI" in your Applications!

@@ -13,6 +13,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Get model selection from parameter (default to gemma2:9b)
+SELECTED_MODEL="${1:-gemma2:9b}"
+
 # Get the directory where this script is located (flash drive)
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="$HOME/Harvey-AI"
@@ -25,6 +28,8 @@ echo "========================================================"
 echo ""
 echo "This will install Harvey AI on your computer."
 echo "Everything is included - no internet needed!"
+echo ""
+echo -e "${GREEN}Selected AI Model:${NC} $SELECTED_MODEL"
 echo ""
 echo "Installation will take 10-30 minutes."
 echo ""
@@ -113,44 +118,55 @@ fi
 sleep 3
 
 echo ""
-echo "[3/7] Loading AI Model (Nemotron 3 Nano 30B)..."
-echo "This may take 10-20 minutes if not already installed..."
+echo "[3/7] Loading AI Model ($SELECTED_MODEL)..."
+echo "This may take a few minutes..."
 echo ""
 
+# Convert model name to filename (replace : with -)
+MODEL_FILENAME="${SELECTED_MODEL//:/-}"
+
 # Check if model is already loaded
-if ollama list | grep -q "nemotron-3-nano:30b"; then
+if ollama list | grep -q "$SELECTED_MODEL"; then
     echo -e "${GREEN}[OK]${NC} AI model already loaded"
 else
     # Check for bundled model
-    if [ -f "$INSTALL_DIR/models/nemotron-3-nano-30b.gguf" ]; then
+    if [ -f "$INSTALL_DIR/models/${MODEL_FILENAME}.gguf" ]; then
         echo "Loading model from flash drive..."
-        echo "This is a large file (~17GB) - please be patient..."
+        echo "Please be patient..."
 
         # Create Ollama models directory
         mkdir -p "$HOME/.ollama/models"
 
         # Copy model
         echo "Copying model file..."
-        cp "$INSTALL_DIR/models/nemotron-3-nano-30b.gguf" "$HOME/.ollama/models/"
+        cp "$INSTALL_DIR/models/${MODEL_FILENAME}.gguf" "$HOME/.ollama/models/"
 
         # Create modelfile
-        echo "FROM nemotron-3-nano-30b.gguf" > /tmp/Modelfile
+        echo "FROM ${MODEL_FILENAME}.gguf" > /tmp/Modelfile
 
         # Load into Ollama
-        ollama create nemotron-3-nano:30b -f /tmp/Modelfile
+        ollama create "$SELECTED_MODEL" -f /tmp/Modelfile
 
         echo -e "${GREEN}[OK]${NC} Model loaded successfully"
     else
         echo "Model not found on flash drive."
         echo "Downloading from internet (requires connection)..."
-        if ollama pull nemotron-3-nano:30b; then
+        if ollama pull "$SELECTED_MODEL"; then
             echo -e "${GREEN}[OK]${NC} Model downloaded successfully"
         else
             echo -e "${YELLOW}[WARNING]${NC} Model download failed"
             echo "You can download it later by running:"
-            echo "  ollama pull nemotron-3-nano:30b"
+            echo "  ollama pull $SELECTED_MODEL"
         fi
     fi
+fi
+
+# Update config.yaml with selected model
+echo ""
+echo "Updating configuration with selected model..."
+if [ -f "$DEST_DIR/backend/config.yaml" ]; then
+    sed -i.bak "s/model: .*/model: \"$SELECTED_MODEL\"/" "$DEST_DIR/backend/config.yaml"
+    echo -e "${GREEN}[OK]${NC} Configuration updated"
 fi
 
 echo ""

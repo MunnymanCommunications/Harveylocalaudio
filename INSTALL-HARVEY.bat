@@ -7,6 +7,10 @@ REM ========================================================
 title Harvey AI Installer
 color 0B
 
+REM Get model selection from parameter (default to gemma2:9b)
+set "SELECTED_MODEL=%1"
+if "%SELECTED_MODEL%"=="" set "SELECTED_MODEL=gemma2:9b"
+
 echo.
 echo ========================================================
 echo              HARVEY AI INSTALLER
@@ -15,6 +19,8 @@ echo ========================================================
 echo.
 echo This will install Harvey AI on your computer.
 echo Everything is included - no internet needed!
+echo.
+echo Selected AI Model: %SELECTED_MODEL%
 echo.
 echo Installation will take 10-30 minutes.
 echo.
@@ -141,48 +147,57 @@ start /B ollama serve >nul 2>&1
 timeout /t 3 /nobreak >nul
 
 echo.
-echo [4/7] Loading AI Model (Nemotron 3 Nano 30B)...
-echo This may take 10-20 minutes if not already installed...
+echo [4/7] Loading AI Model (%SELECTED_MODEL%)...
+echo This may take a few minutes...
 echo.
 
+REM Convert model name to filename (replace : with -)
+set "MODEL_FILENAME=%SELECTED_MODEL::=-%"
+
 REM Check if model is already loaded
-ollama list | find "nemotron-3-nano:30b" >nul
+ollama list | find "%SELECTED_MODEL%" >nul
 if %errorLevel% == 0 (
     echo [OK] AI model already loaded
 ) else (
     REM Check for bundled model
-    if exist "%INSTALL_DIR%models\nemotron-3-nano-30b.gguf" (
+    if exist "%INSTALL_DIR%models\%MODEL_FILENAME%.gguf" (
         echo Loading model from flash drive...
-        echo This is a large file (~17GB) - please be patient...
+        echo Please be patient...
 
         REM Create Ollama models directory if it doesn't exist
         if not exist "%USERPROFILE%\.ollama\models" mkdir "%USERPROFILE%\.ollama\models"
 
         REM Copy model to Ollama directory
         echo Copying model file...
-        copy "%INSTALL_DIR%models\nemotron-3-nano-30b.gguf" "%USERPROFILE%\.ollama\models\" /Y
+        copy "%INSTALL_DIR%models\%MODEL_FILENAME%.gguf" "%USERPROFILE%\.ollama\models\" /Y
 
         REM Create modelfile
-        echo FROM nemotron-3-nano-30b.gguf > "%TEMP%\Modelfile"
+        echo FROM %MODEL_FILENAME%.gguf > "%TEMP%\Modelfile"
 
         REM Load into Ollama
-        ollama create nemotron-3-nano:30b -f "%TEMP%\Modelfile"
+        ollama create %SELECTED_MODEL% -f "%TEMP%\Modelfile"
 
         echo [OK] Model loaded successfully
     ) else (
         echo Model not found on flash drive.
         echo Downloading from internet (requires connection)...
-        ollama pull nemotron-3-nano:30b
+        ollama pull %SELECTED_MODEL%
 
         if %errorLevel% == 0 (
             echo [OK] Model downloaded successfully
         ) else (
             echo [WARNING] Model download failed
             echo You can download it later by running:
-            echo   ollama pull nemotron-3-nano:30b
+            echo   ollama pull %SELECTED_MODEL%
         )
     )
 )
+
+REM Update config.yaml with selected model
+echo.
+echo Updating configuration with selected model...
+powershell -Command "(Get-Content '%DEST_DIR%\backend\config.yaml') -replace 'model:.*', 'model: \"%SELECTED_MODEL%\"' | Set-Content '%DEST_DIR%\backend\config.yaml'"
+echo [OK] Configuration updated
 
 echo.
 echo [5/7] Copying Harvey AI files...
