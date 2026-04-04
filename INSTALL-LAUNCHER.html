@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harvey AI - One-Click Installer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+            padding: 60px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            color: #333;
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        .feature-list {
+            text-align: left;
+            margin: 30px 0;
+            padding: 0 20px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            min-width: 30px;
+        }
+
+        .install-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 24px;
+            font-weight: 700;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .install-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+        }
+
+        .install-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .platform-selector {
+            margin: 30px 0;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .platform-btn {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .platform-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .platform-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .info-box {
+            background: #f0f0f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .status {
+            margin-top: 30px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar.show {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🤖</div>
+        <h1>Harvey AI</h1>
+        <p class="subtitle">Voice Conversational AI - Local & Private</p>
+
+        <div class="feature-list">
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                <span><strong>100% Offline</strong> - No internet required after install</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔒</span>
+                <span><strong>Complete Privacy</strong> - All data stays on your computer</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⚡</span>
+                <span><strong>Low Latency</strong> - Fast voice conversations (~500ms)</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🎙️</span>
+                <span><strong>Voice Cloning</strong> - Use your own voice or custom voices</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🌍</span>
+                <span><strong>14+ Languages</strong> - Multilingual support included</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🎯</span>
+                <span><strong>Easy to Use</strong> - No technical knowledge needed</span>
+            </div>
+        </div>
+
+        <div class="platform-selector">
+            <button class="platform-btn active" onclick="selectPlatform('windows')">
+                🪟 Windows
+            </button>
+            <button class="platform-btn" onclick="selectPlatform('mac')">
+                🍎 macOS
+            </button>
+            <button class="platform-btn" onclick="selectPlatform('linux')">
+                🐧 Linux
+            </button>
+        </div>
+
+        <button class="install-btn" onclick="startInstall()" id="installBtn">
+            <span id="installText">📦 Install Harvey AI</span>
+        </button>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="info-box">
+            <h3>📋 What Gets Installed</h3>
+            <p>
+                • Python 3.10+ (if not already installed)<br>
+                • Ollama AI Runtime<br>
+                • Nemotron 3 Nano 30B Model (~17GB)<br>
+                • Harvey Voice AI Application<br>
+                • Desktop Shortcut for Easy Access<br>
+                <br>
+                <strong>Total Size:</strong> ~20GB | <strong>Time:</strong> 10-30 minutes
+            </p>
+        </div>
+
+        <div class="footer">
+            Harvey AI v1.0 - Self-Hosted Voice Assistant<br>
+            No internet required after installation
+        </div>
+    </div>
+
+    <script>
+        let selectedPlatform = 'windows';
+
+        function selectPlatform(platform) {
+            selectedPlatform = platform;
+
+            // Update button states
+            document.querySelectorAll('.platform-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update install button text
+            const platformIcons = {
+                windows: '🪟',
+                mac: '🍎',
+                linux: '🐧'
+            };
+
+            document.getElementById('installText').textContent =
+                `${platformIcons[platform]} Install Harvey AI for ${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
+        }
+
+        function startInstall() {
+            const statusEl = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            const installBtn = document.getElementById('installBtn');
+
+            // Show progress
+            progressBar.classList.add('show');
+            installBtn.disabled = true;
+            installBtn.style.opacity = '0.6';
+            installBtn.style.cursor = 'not-allowed';
+
+            // Launch installer based on platform
+            let installerPath;
+            switch(selectedPlatform) {
+                case 'windows':
+                    installerPath = 'INSTALL-HARVEY.bat';
+                    break;
+                case 'mac':
+                case 'linux':
+                    installerPath = 'INSTALL-HARVEY.sh';
+                    break;
+            }
+
+            // Try to launch the installer
+            try {
+                // For local file:// protocol, we can't directly execute
+                // Show instructions instead
+                showInstructions(installerPath);
+            } catch (error) {
+                showError('Could not launch installer automatically. Please run ' + installerPath + ' manually.');
+            }
+        }
+
+        function showInstructions(installerPath) {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status show success';
+
+            let instructions = '';
+            if (selectedPlatform === 'windows') {
+                instructions = `
+                    <strong>Installation Starting...</strong><br><br>
+                    1. Double-click <strong>${installerPath}</strong> in the Harvey folder<br>
+                    2. Click "Yes" when prompted for administrator access<br>
+                    3. Wait for installation to complete (10-30 minutes)<br>
+                    4. Look for "Harvey AI" icon on your desktop when done!<br>
+                    <br>
+                    <em>The installer window will open automatically. Please follow the on-screen prompts.</em>
+                `;
+
+                // Try to launch
+                window.location.href = installerPath;
+            } else {
+                instructions = `
+                    <strong>Installation Instructions:</strong><br><br>
+                    1. Open Terminal (Applications → Utilities → Terminal)<br>
+                    2. Drag <strong>${installerPath}</strong> into the Terminal window<br>
+                    3. Press Enter and follow prompts<br>
+                    4. Wait for installation to complete<br>
+                    5. Look for "Harvey AI" in your Applications!
+                `;
+            }
+
+            statusEl.innerHTML = instructions;
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+
+            progressBar.classList.remove('show');
+            statusEl.className = 'status show error';
+            statusEl.textContent = message;
+        }
+
+        // Auto-detect platform
+        window.onload = function() {
+            const platform = navigator.platform.toLowerCase();
+            if (platform.includes('win')) {
+                selectPlatform('windows');
+            } else if (platform.includes('mac')) {
+                selectPlatform('mac');
+            } else if (platform.includes('linux')) {
+                selectPlatform('linux');
+            }
+        };
+    </script>
+</body>
+</html>
