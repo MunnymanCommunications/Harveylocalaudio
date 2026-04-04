@@ -16,6 +16,13 @@ from stt_engine import WhisperSTT
 from llm_client import OllamaClient
 from tts_engine_local import LocalPiperTTS as CoquiTTS  # Using Piper TTS (Python 3.12 compatible)
 
+try:
+    from survival_rag import SurvivalRAG
+    SURVIVAL_RAG_AVAILABLE = True
+except ImportError:
+    SURVIVAL_RAG_AVAILABLE = False
+    logger.warning("SurvivalRAG not available - running without survival knowledge augmentation")
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,11 +36,15 @@ class AudioPipeline:
         self.stt: Optional[WhisperSTT] = None
         self.llm: Optional[OllamaClient] = None
         self.tts: Optional[CoquiTTS] = None
+        self.survival_rag: Optional[SurvivalRAG] = None
 
         # Conversation history
         self.conversation_history = []
         self.max_history = config['conversation']['max_history']
         self.system_prompt = config['conversation']['system_prompt']
+
+        # Survival mode settings
+        self.ultra_low_latency = config.get('survival_rag', {}).get('ultra_low_latency', False)
 
     async def initialize(self):
         """Initialize all pipeline components"""
@@ -65,6 +76,17 @@ class AudioPipeline:
         except Exception as e:
             logger.error(f"Failed to initialize TTS: {e}")
             raise
+
+        # Initialize SurvivalRAG if enabled
+        if SURVIVAL_RAG_AVAILABLE and self.config.get('survival_rag', {}).get('enabled', False):
+            try:
+                manuals_dir = self.config['survival_rag'].get('manuals_dir', 'survival_manuals')
+                self.survival_rag = SurvivalRAG(manuals_dir)
+                await self.survival_rag.initialize()
+                logger.info("SurvivalRAG initialized - survival knowledge available")
+            except Exception as e:
+                logger.warning(f"Could not initialize SurvivalRAG: {e}")
+                self.survival_rag = None
 
         logger.info("Audio pipeline ready")
 
@@ -199,6 +221,14 @@ class AudioPipeline:
         if context.get('current_datetime'):
             system_content += f"\n\nCurrent date and time (Eastern Time): {context['current_datetime']}"
 
+        # Augment with SurvivalRAG if available
+        if self.survival_rag:
+            system_content = self.survival_rag.augment_prompt(
+                user_input,
+                system_content,
+                ultra_low_latency=self.ultra_low_latency
+            )
+
         # Build messages with system prompt
         messages = [
             {"role": "system", "content": system_content}
@@ -289,6 +319,14 @@ class AudioPipeline:
         system_content = self.system_prompt
         if context.get('current_datetime'):
             system_content += f"\n\nCurrent date and time (Eastern Time): {context['current_datetime']}"
+
+        # Augment with SurvivalRAG if available
+        if self.survival_rag:
+            system_content = self.survival_rag.augment_prompt(
+                user_input,
+                system_content,
+                ultra_low_latency=self.ultra_low_latency
+            )
 
         # Build messages with system prompt
         messages = [

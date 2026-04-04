@@ -333,64 +333,58 @@
         </div>
 
         <div class="info-box" style="margin-top: 30px;">
-            <h3>🧠 Choose AI Model Size</h3>
-            <p style="margin-bottom: 15px;">Select based on your computer's capabilities:</p>
+            <h3>🧠 Choose AI Model</h3>
+            <p style="margin-bottom: 15px;">Select based on your situation:</p>
 
             <div class="model-selector">
                 <label class="model-option">
-                    <input type="radio" name="model" value="gemma2:2b" onclick="selectModel('gemma2:2b')">
-                    <div class="model-card">
-                        <div class="model-name">⚡ Gemma 2B - Ultra Fast</div>
-                        <div class="model-specs">Size: ~1.5GB | RAM: 4GB | Response: <200ms</div>
-                        <div class="model-desc">Perfect for laptops, older computers, or when you want instant responses</div>
-                    </div>
-                </label>
-
-                <label class="model-option">
-                    <input type="radio" name="model" value="qwen2.5:3b" onclick="selectModel('qwen2.5:3b')">
-                    <div class="model-card">
-                        <div class="model-name">🚀 Qwen 2.5 3B - Balanced</div>
-                        <div class="model-specs">Size: ~2GB | RAM: 6GB | Response: ~300ms</div>
-                        <div class="model-desc">Great balance of speed and intelligence - works on most computers</div>
-                    </div>
-                </label>
-
-                <label class="model-option">
-                    <input type="radio" name="model" value="gemma2:9b" checked onclick="selectModel('gemma2:9b')">
+                    <input type="radio" name="model" value="qwen2.5:1.5b-instruct" checked onclick="selectModel('qwen2.5:1.5b-instruct')">
                     <div class="model-card recommended">
-                        <div class="model-name">⭐ Gemma 9B - Recommended</div>
-                        <div class="model-specs">Size: ~5.5GB | RAM: 8GB | Response: ~400ms</div>
-                        <div class="model-desc">Best overall choice - smart and fast on modern computers</div>
-                        <div class="badge">RECOMMENDED</div>
-                    </div>
-                </label>
-
-                <label class="model-option">
-                    <input type="radio" name="model" value="qwen2.5:14b" onclick="selectModel('qwen2.5:14b')">
-                    <div class="model-card">
-                        <div class="model-name">💎 Qwen 2.5 14B - High Quality</div>
-                        <div class="model-specs">Size: ~9GB | RAM: 16GB | Response: ~600ms</div>
-                        <div class="model-desc">Excellent reasoning and language understanding</div>
-                    </div>
-                </label>
-
-                <label class="model-option">
-                    <input type="radio" name="model" value="nemotron-mini:15b" onclick="selectModel('nemotron-mini:15b')">
-                    <div class="model-card">
-                        <div class="model-name">🎯 Nemotron Mini 15B - Advanced</div>
-                        <div class="model-specs">Size: ~9GB | RAM: 16GB | Response: ~700ms</div>
-                        <div class="model-desc">Powerful conversational AI with great personality</div>
+                        <div class="model-name">⚡ Qwen 1.5B - Emergency Mode</div>
+                        <div class="model-specs">Size: ~1GB | RAM: 2GB | Response: <100ms | Battery: 🔋🔋🔋🔋🔋</div>
+                        <div class="model-desc">Ultra-fast survival AI - works on any device, minimal power usage. Perfect for emergencies, off-grid, low-battery situations. Paired with 70+ survival manuals.</div>
+                        <div class="badge">SURVIVAL READY</div>
                     </div>
                 </label>
 
                 <label class="model-option">
                     <input type="radio" name="model" value="nemotron-3-nano:30b" onclick="selectModel('nemotron-3-nano:30b')">
                     <div class="model-card">
-                        <div class="model-name">🔥 Nemotron 30B - Maximum Power</div>
-                        <div class="model-specs">Size: ~17GB | RAM: 32GB+ | Response: ~800ms</div>
-                        <div class="model-desc">Best quality - requires powerful computer with GPU</div>
+                        <div class="model-name">🔥 Nemotron 30B - Full Power Mode</div>
+                        <div class="model-specs">Size: ~17GB | RAM: 32GB+ | Response: ~800ms | Battery: 🔋</div>
+                        <div class="model-desc">Maximum intelligence for detailed analysis, planning, and complex problem-solving. Use when you have reliable power and need comprehensive answers.</div>
                     </div>
                 </label>
+            </div>
+
+            <div class="hardware-req">
+                <strong>💡 Which to choose?</strong><br>
+                <strong>Emergency/Survival:</strong> Qwen 1.5B - Works on laptops, tablets, phones. Runs for hours on battery. Instant answers.<br>
+                <strong>Base Camp/Grid:</strong> Nemotron 30B - Powerful computer with AC power. Deep analysis and planning.
+            </div>
+        </div>
+
+        <div class="info-box" style="background: #e7f5e7; border-left-color: #28a745;">
+            <h3>🎒 SurvivalRAG Knowledge Base</h3>
+            <p style="margin-bottom: 10px;">
+                <strong>Included with both models:</strong> 70+ survival and first-aid manuals
+            </p>
+            <div style="font-size: 13px; line-height: 1.6;">
+                ✅ US Army Survival Manual<br>
+                ✅ Wilderness First Aid Guide<br>
+                ✅ Emergency Medicine Handbook<br>
+                ✅ Water Purification Techniques<br>
+                ✅ Shelter Building & Fire Starting<br>
+                ✅ Edible Plants & Food Foraging<br>
+                ✅ Navigation Without GPS<br>
+                ✅ And 60+ more essential guides<br>
+                <br>
+                <strong>Features:</strong><br>
+                • Works completely offline<br>
+                • Reduces AI hallucinations (real manual citations)<br>
+                • Ultra-low latency mode (1-2 sentence answers)<br>
+                • Compatible with Meshtastic mesh networks<br>
+                • Public domain content - legal everywhere
             </div>
         </div>
 
@@ -425,7 +419,7 @@
 
     <script>
         let selectedPlatform = 'windows';
-        let selectedModel = 'gemma2:9b';
+        let selectedModel = 'qwen2.5:1.5b-instruct'; // Default to survival mode
 
         function selectModel(model) {
             selectedModel = model;
@@ -433,6 +427,24 @@
         }
 
         function selectPlatform(platform) {
+            selectedPlatform = platform;
+
+            // Update button states
+            document.querySelectorAll('.platform-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update install button text
+            const platformIcons = {
+                windows: '🪟',
+                mac: '🍎',
+                linux: '🐧'
+            };
+
+            document.getElementById('installText').textContent =
+                `${platformIcons[platform]} Install Harvey AI for ${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
+        }
             selectedPlatform = platform;
 
             // Update button states
@@ -493,12 +505,8 @@
             localStorage.setItem('harveySelectedModel', selectedModel);
 
             const modelNames = {
-                'gemma2:2b': 'Gemma 2B (Ultra Fast)',
-                'qwen2.5:3b': 'Qwen 2.5 3B (Balanced)',
-                'gemma2:9b': 'Gemma 9B (Recommended)',
-                'qwen2.5:14b': 'Qwen 2.5 14B (High Quality)',
-                'nemotron-mini:15b': 'Nemotron Mini 15B (Advanced)',
-                'nemotron-3-nano:30b': 'Nemotron 30B (Maximum Power)'
+                'qwen2.5:1.5b-instruct': 'Qwen 1.5B Instruct (Emergency/Survival)',
+                'nemotron-3-nano:30b': 'Nemotron 30B (Full Power)'
             };
 
             let instructions = '';

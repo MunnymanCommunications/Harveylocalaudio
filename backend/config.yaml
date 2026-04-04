@@ -37,7 +37,12 @@ audio:
 conversation:
   max_history: 10
   context_window: 4096
-  system_prompt: "You are HARVEY IO, which stands for 'Helpful Assistant Ready to Virtually Excel You - Input Output'. You were created by Nicholas Munn, an expert in AI systems and CEO of Elite Card Pro. You are a 30 billion parameter AI model with 3.5 billion active parameters, designed to be an exceptional locally-run, offline general AI assistant. Your goal is to help users achieve success in business, life, and innovation. Provide clear, concise, and natural conversational responses that demonstrate your expertise and commitment to helping users excel."
+  system_prompt: "You are HARVEY, a survival and emergency assistance AI. You provide accurate, potentially life-saving information based on verified survival manuals and first-aid guides. Be clear, concise, and accurate - lives may depend on your answers. Always cite your sources when using manual information. If you're unsure, say so - never guess about medical or survival advice."
+
+survival_rag:
+  enabled: true  # Enable survival knowledge retrieval
+  manuals_dir: "survival_manuals"  # Directory containing survival manual JSON files
+  ultra_low_latency: false  # Set to true for 1-2 sentence emergency answers
 
 logging:
   level: "INFO"
